@@ -1,10 +1,12 @@
 package com.pusher
 
 import com.pusher.Signature.sign
+import com.pusher.Types.PusherResponse
+
+import org.json4s.native.JsonMethods.parse
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.write
 import java.security.MessageDigest
-
 import scalaj.http._
 
 /**
@@ -104,18 +106,36 @@ class Request(client: Pusher,
   }
 
   /**
+   * Handle HTTP responses
+   * @param response The HTTP response object
+   * @return PusherResponse
+   */
+  private def handleResponse(response: HttpResponse[String]): PusherResponse = {
+    val responseBody: String = response.body
+      response.code match {
+      case 200 => Right(parse(responseBody).extract[Map[String, Any]])
+      case 400 => Left(new PusherBadRequestException(responseBody))
+      case 401 => Left(new PusherBadAuthException(responseBody))
+      case 403 => Left(new PusherForbiddenException(responseBody))
+      case _ =>
+        val statusCode: Int = response.code
+        Left(new PusherBadStatusException(s"$statusCode: $responseBody"))
+    }
+  }
+
+  /**
    * Make a new HTTP request
    * Generate all auth that is required to be sent
    */
-  def makeRequest(): HttpResponse[String] = {
+  def makeRequest(): PusherResponse = {
     generateAuth()
     val request: HttpRequest =
       addHeaders(Http(endpoint()).method(verb).params(queryParams))
     verb match {
       case "POST" =>
-        request.postData(_body).asString
+        handleResponse(request.postData(_body).asString)
       case "GET" =>
-        request.asString
+        handleResponse(request.asString)
     }
   }
 }
