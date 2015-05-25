@@ -1,7 +1,6 @@
 package com.pusher
 
 import java.net.URI
-
 import Util.checkEmptyCredentials
 
 /**
@@ -19,6 +18,8 @@ class Pusher(val appId: String,
              val ssl: Boolean = true,
              val host: String = "api.pusherapp.com",
              val timeout: Int = 5) {
+
+  self =>
 
   private var _scheme: String = "http"
   private var _port: Int = 80
@@ -45,6 +46,64 @@ class Pusher(val appId: String,
    * @return Int
    */
   def port = _port
+
+  /**
+   * Trigger an event
+   * @param channel Channel to trigger the event on
+   * @param eventName Name of the event
+   * @param data Data to send
+   */
+  def trigger(channel:String, eventName: String, data: String): Unit = {
+    val params: Map[String, String] = Map(
+      "name" -> eventName,
+      "channel" -> channel,
+      "data" -> data
+    )
+
+    Request(self, "POST", "/events", params)
+  }
+
+  /**
+   * Get information for multiple channels
+   * @param prefixFilter Prefix to filter channels with
+   * @param attributes Attributes to be returned for each channel
+   */
+  def channelsInfo(prefixFilter: String = null,
+                   attributes: List[String] = List()): Unit = {
+    var params: Map[String, String] = Map()
+    if (attributes.nonEmpty) {
+      params += ("info" -> attributes.mkString(","))
+    }
+
+    if (prefixFilter.nonEmpty) {
+      params += ("filter_by_prefix" -> prefixFilter)
+    }
+
+    Request(self, "GET", "/channels", params)
+  }
+
+  /**
+   * Get info for one channel
+   * @param channel Name of channel
+   * @param attributes Attributes requested
+   */
+  def channelInfo(channel: String,
+                  attributes: List[String] = List()): Unit = {
+    var params: Map[String, String] = Map()
+    if (attributes.nonEmpty) {
+      params += ("info" -> attributes.mkString(","))
+    }
+
+    Request(self, "GET", s"/channels/$channel", params)
+  }
+
+  /**
+   * Fetch user id's subscribed to a channel
+   * @param channel Name of channel
+   */
+  def usersInfo(channel: String): Unit = {
+    Request(self, "GET", s"/channels/$channel/users")
+  }
 }
 
 object Pusher {
@@ -73,4 +132,5 @@ object Pusher {
     new Pusher(appId, key, secret, ssl, host)
   }
 }
+
 
