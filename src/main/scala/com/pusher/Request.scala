@@ -26,16 +26,6 @@ class Request(client: Pusher,
 
   implicit val formats = DefaultFormats
 
-  generateAuth()
-  verb match {
-    case "POST" =>
-      val response: HttpResponse[String] =
-        Http(endpoint()).method(verb).headers(headers).params(queryParams).postData(_body).asString
-      println(response)
-    case "GET" =>
-      Http(endpoint()).method(verb).headers(headers).params(queryParams).asString
-  }
-
   /**
    * Getter for body
    * @return String
@@ -99,6 +89,32 @@ class Request(client: Pusher,
    */
   private def endpoint(): String = client.scheme + "://" + client.host + path
 
+  /**
+   * Add headers to an HTTP request if they exist
+   * @param request HTTPRequest to which headers must be added
+   * @return HTTPRequest
+   */
+  private def addHeaders(request: HttpRequest): HttpRequest = {
+    if (headers.nonEmpty) request.headers(headers)
+
+    request
+  }
+
+  /**
+   * Make a new HTTP request
+   * Generate all auth that is required to be sent
+   */
+  def makeRequest(): HttpResponse[String] = {
+    generateAuth()
+    val request: HttpRequest =
+      addHeaders(Http(endpoint()).method(verb).params(queryParams))
+    verb match {
+      case "POST" =>
+        request.postData(_body).asString
+      case "GET" =>
+        request.asString
+    }
+  }
 }
 
 /**
@@ -120,7 +136,7 @@ object Request {
             path: String,
             params: Map[String, String],
             body: String = null) = {
-    new Request(client, verb, path, params, body)
+    new Request(client, verb, path, params, body).makeRequest()
   }
 }
 
