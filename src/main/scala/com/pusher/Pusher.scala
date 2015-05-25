@@ -2,6 +2,7 @@ package com.pusher
 
 import java.net.URI
 import Util.checkEmptyCredentials
+import com.pusher.Types.PusherResponse
 
 /**
  *
@@ -52,8 +53,9 @@ class Pusher(val appId: String,
    * @param channel Channel to trigger the event on
    * @param eventName Name of the event
    * @param data Data to send
+   * @return PusherResponse
    */
-  def trigger(channel:String, eventName: String, data: String): Unit = {
+  def trigger(channel:String, eventName: String, data: String): PusherResponse = {
     val params: Map[String, String] = Map(
       "name" -> eventName,
       "channel" -> channel,
@@ -67,9 +69,10 @@ class Pusher(val appId: String,
    * Get information for multiple channels
    * @param prefixFilter Prefix to filter channels with
    * @param attributes Attributes to be returned for each channel
+   * @return PusherResponse
    */
   def channelsInfo(prefixFilter: String = null,
-                   attributes: List[String] = List()): Unit = {
+                   attributes: List[String] = List()): PusherResponse = {
     var params: Map[String, String] = Map()
     if (attributes.nonEmpty) {
       params += ("info" -> attributes.mkString(","))
@@ -86,9 +89,10 @@ class Pusher(val appId: String,
    * Get info for one channel
    * @param channel Name of channel
    * @param attributes Attributes requested
+   * @return PusherResponse
    */
   def channelInfo(channel: String,
-                  attributes: List[String] = List()): Unit = {
+                  attributes: List[String] = List()): PusherResponse = {
     var params: Map[String, String] = Map()
     if (attributes.nonEmpty) {
       params += ("info" -> attributes.mkString(","))
@@ -100,6 +104,7 @@ class Pusher(val appId: String,
   /**
    * Fetch user id's subscribed to a channel
    * @param channel Name of channel
+   * @return PusherResponse
    */
   def usersInfo(channel: String): Unit = {
     Request(self, "GET", s"/channels/$channel/users")
