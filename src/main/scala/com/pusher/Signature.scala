@@ -15,7 +15,7 @@ object Signature {
     val mac = Mac.getInstance(SHA256)
     mac.init(new SecretKeySpec(secret.getBytes, SHA256))
 
-    mac.doFinal(stringToSign.getBytes).toString
+    mac.doFinal(stringToSign.getBytes).map("%02x".format(_)).mkString
   }
 
   /**
