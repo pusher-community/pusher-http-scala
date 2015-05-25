@@ -1,7 +1,7 @@
 package com.pusher
 
 import java.net.URI
-import Util.checkEmptyCredentials
+import Util._
 import com.pusher.Types.PusherResponse
 
 /**
@@ -25,7 +25,7 @@ class Pusher(val appId: String,
   private var _scheme: String = "http"
   private var _port: Int = 80
 
-  checkEmptyCredentials(Map(
+  validateCredentials(Map(
     "appId" -> appId,
     "key" -> key,
     "secret" -> secret
@@ -53,14 +53,23 @@ class Pusher(val appId: String,
    * @param channel Channel to trigger the event on
    * @param eventName Name of the event
    * @param data Data to send
+   * @param socketId Socked ID to exclude
    * @return PusherResponse
    */
-  def trigger(channel:String, eventName: String, data: String): PusherResponse = {
-    val params: Map[String, String] = Map(
+  def trigger(channel: String,
+              eventName: String,
+              data: String,
+              socketId: String): PusherResponse = {
+    validateEventNameLength(eventName)
+    validateDataLength(data)
+
+    var params: Map[String, String] = Map(
       "name" -> eventName,
       "channel" -> channel,
       "data" -> data
     )
+
+    if (socketId.nonEmpty) params += ("socket_id" -> validateSocketId(socketId))
 
     Request(self, "POST", "/events", params)
   }
@@ -93,6 +102,7 @@ class Pusher(val appId: String,
    */
   def channelInfo(channel: String,
                   attributes: List[String] = List()): PusherResponse = {
+    validateChannel(channel)
     var params: Map[String, String] = Map()
     if (attributes.nonEmpty) {
       params += ("info" -> attributes.mkString(","))
@@ -107,6 +117,7 @@ class Pusher(val appId: String,
    * @return PusherResponse
    */
   def usersInfo(channel: String): Unit = {
+    validateChannel(channel)
     Request(self, "GET", s"/channels/$channel/users")
   }
 }
