@@ -1,27 +1,40 @@
 package com.pusher
 
 import com.pusher.Signature.sign
-
-import dispatch._
-import java.net.URI
+import org.json4s.DefaultFormats
+import org.json4s.native.Serialization.write
 import java.security.MessageDigest
-import java.sql.Timestamp
+
+import scalaj.http._
 
 /**
  * Class to handle HTTP requests
  * @param client A Pusher instance
  * @param verb Type of request to make
- * @param uri The URI to make the request to
+ * @param path The path to make the request to
  * @param _params Parameters to be passed to the request
- * @param _body Body content of the request
+ * @param _body Optional body
  */
 class Request(client: Pusher,
               verb: String,
-              uri: String,
+              path: String,
               private var _params: Map[String, String],
-              private var _body: String) {
+              private var _body: String = null) {
 
   private var headers: Map[String, String] = Map()
+  private var queryParams: Map[String, String] = _params
+
+  implicit val formats = DefaultFormats
+
+  generateAuth()
+  verb match {
+    case "POST" =>
+      val response: HttpResponse[String] =
+        Http(endpoint()).method(verb).headers(headers).params(queryParams).postData(_body).asString
+      println(response)
+    case "GET" =>
+      Http(endpoint()).method(verb).headers(headers).params(queryParams).asString
+  }
 
   /**
    * Getter for body
@@ -39,23 +52,26 @@ class Request(client: Pusher,
    * Generate authentication for the request
    */
   private def generateAuth(): Unit = {
-    if (verb == "POST" && !_body.isEmpty) {
-      _params += ("body_md5" -> generateMD5Hash(_body).toString)
+    if (verb == "POST") {
+      _body = write(_params)
+      queryParams = Map()
+      queryParams += ("body_md5" -> generateMD5Hash(_body).toString)
+      headers += ("Content-Type" -> "application/json")
     }
 
-    _params += (
+    queryParams += (
       "auth_key" -> client.key,
       "auth_version" -> "1.0",
-      "auth_timestamp" -> new Timestamp(System.currentTimeMillis).toString
+      "auth_timestamp" -> (System.currentTimeMillis / 1000).toString
     )
 
     val authString = List(
       verb,
-      serializedUri.getPath,
+      path,
       generateQueryString()
     ).mkString("\n")
 
-    _params += ("auth_signature" -> sign(client.secret, authString))
+    queryParams += ("auth_signature" -> sign(client.secret, authString))
   }
 
   /**
@@ -63,9 +79,9 @@ class Request(client: Pusher,
    * @return String
    */
   private def generateQueryString(): String = {
-    _params.map { case(k, v) =>
-      k + "=" + v.headOption.getOrElse("")
-    }.mkString("?", "&", "")
+    queryParams.toSeq.sortBy(_._1).map { case(k, v) =>
+      k + "=" + v
+    }.mkString("&")
   }
 
   /**
@@ -74,14 +90,37 @@ class Request(client: Pusher,
    * @return String
    */
   private def generateMD5Hash(s: String): String = {
-    MessageDigest.getInstance("MD5").digest(s.getBytes).toString
+    MessageDigest.getInstance("MD5").digest(s.getBytes).map("%02x".format(_)).mkString
   }
 
   /**
-   * Serialize the uri string to an URI object
-   * @return URI
+   * Get the pusher endpoint
+   * @return String
    */
-  private def serializedUri: URI = {
-    new URI(uri)
+  private def endpoint(): String = client.scheme + "://" + client.host + path
+
+}
+
+/**
+ * Companion object for the Request class
+ * Acts as a Singleton
+ */
+object Request {
+  /**
+   * Make a new Request
+   * @param client  A Pusher instance
+   * @param verb Type of request to make
+   * @param path The path to make the request to
+   * @param params Parameters to be passed to the request
+   * @param body Optional body
+   * @return Request
+   */
+  def apply(client: Pusher,
+            verb: String,
+            path: String,
+            params: Map[String, String],
+            body: String = null) = {
+    new Request(client, verb, path, params, body)
   }
 }
+
