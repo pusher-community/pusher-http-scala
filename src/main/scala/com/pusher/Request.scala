@@ -18,7 +18,7 @@ import scalaj.http._
 class Request(client: Pusher,
               verb: String,
               path: String,
-              private var _params: Map[String, String],
+              private var _params: Map[String, String] = Map(),
               private var _body: String = null) {
 
   private var headers: Map[String, String] = Map()
@@ -87,7 +87,10 @@ class Request(client: Pusher,
    * Get the pusher endpoint
    * @return String
    */
-  private def endpoint(): String = client.scheme + "://" + client.host + path
+  private def endpoint(): String = {
+    val appId = client.appId
+    client.scheme + "://" + client.host + s"/apps/$appId" + path
+  }
 
   /**
    * Add headers to an HTTP request if they exist
@@ -134,7 +137,7 @@ object Request {
   def apply(client: Pusher,
             verb: String,
             path: String,
-            params: Map[String, String],
+            params: Map[String, String] = Map(),
             body: String = null) = {
     new Request(client, verb, path, params, body).makeRequest()
   }
