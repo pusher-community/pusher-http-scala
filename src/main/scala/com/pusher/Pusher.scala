@@ -3,6 +3,7 @@ package com.pusher
 import java.net.URI
 import Util._
 import com.pusher.Types.PusherResponse
+import com.pusher.Signature.sign
 
 /**
  *
@@ -122,8 +123,41 @@ class Pusher(val appId: String,
    */
   def usersInfo(channel: String): PusherResponse = {
     validateChannel(channel)
-    
+
     Request(self, "GET", s"/channels/$channel/users")
+  }
+
+  /**
+   * Generate a delegated client subscription token
+   *
+   * @param channel Channel to authenticate
+   * @param socketId SocketId that required auth
+   * @param customData Used on presence channels for info
+   * @return String
+   */
+  def authenticate(channel: String,
+                   socketId: String,
+                   customData: Map[String, String] = null): String = {
+    validateChannel(channel)
+    validateSocketId(socketId)
+
+    var stringToSign: String = s"$socketId:$channel"
+    if (customData.nonEmpty) {
+      val encodedData: String = encodeJson(customData)
+      stringToSign += s":$encodedData"
+    }
+
+    val signature: String = sign(secret, stringToSign)
+    val auth: String = s"$key:$signature"
+    var result: Map[String, String] = Map(
+      "auth" -> auth
+    )
+
+    if (customData.nonEmpty) {
+      result += ("channel_data" -> encodeJson(customData))
+    }
+
+    encodeJson(result)
   }
 }
 
