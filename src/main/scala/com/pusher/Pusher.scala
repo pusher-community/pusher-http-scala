@@ -116,7 +116,7 @@ class Pusher(val appId: String,
    * @param channel Name of channel
    * @return PusherResponse
    */
-  def usersInfo(channel: String): Unit = {
+  def usersInfo(channel: String): PusherResponse = {
     validateChannel(channel)
     Request(self, "GET", s"/channels/$channel/users")
   }
@@ -136,7 +136,6 @@ object Pusher {
     val key: String = url.getUserInfo.split(":")(0)
     val secret: String = url.getUserInfo.split(":")(1)
     var ssl: Boolean = false
-    var port: Int = 443
     val host: String = url.getHost
 
     if (url.getScheme == "http") {
