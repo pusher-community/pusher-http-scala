@@ -3,7 +3,7 @@ package com.pusher
 import java.net.URI
 import Util._
 import com.pusher.Types.PusherResponse
-import com.pusher.Signature.sign
+import com.pusher.Signature.{sign, verify}
 
 /**
  *
@@ -85,10 +85,10 @@ class Pusher(val appId: String,
    * @return PusherResponse
    */
   def channelsInfo(prefixFilter: String = null,
-                   attributes: List[String] = List()): PusherResponse = {
+                   attributes: Option[List[String]]): PusherResponse = {
     var params: Map[String, String] = Map()
-    if (attributes.nonEmpty) {
-      params += ("info" -> attributes.mkString(","))
+    if (attributes.isDefined) {
+      params += ("info" -> attributes.get.mkString(","))
     }
 
     if (prefixFilter.nonEmpty) {
@@ -105,12 +105,12 @@ class Pusher(val appId: String,
    * @return PusherResponse
    */
   def channelInfo(channel: String,
-                  attributes: List[String] = List()): PusherResponse = {
+                  attributes: Option[List[String]]): PusherResponse = {
     validateChannel(channel)
 
     var params: Map[String, String] = Map()
-    if (attributes.nonEmpty) {
-      params += ("info" -> attributes.mkString(","))
+    if (attributes.isDefined) {
+      params += ("info" -> attributes.get.mkString(","))
     }
 
     Request(self, "GET", s"/channels/$channel", params)
@@ -129,7 +129,6 @@ class Pusher(val appId: String,
 
   /**
    * Generate a delegated client subscription token
-   *
    * @param channel Channel to authenticate
    * @param socketId SocketId that required auth
    * @param customData Used on presence channels for info
@@ -137,13 +136,13 @@ class Pusher(val appId: String,
    */
   def authenticate(channel: String,
                    socketId: String,
-                   customData: Map[String, String] = null): String = {
+                   customData: Option[Map[String, String]]): String = {
     validateChannel(channel)
     validateSocketId(socketId)
 
     var stringToSign: String = s"$socketId:$channel"
-    if (customData.nonEmpty) {
-      val encodedData: String = encodeJson(customData)
+    if (customData.isDefined) {
+      val encodedData: String = encodeJson(customData.get)
       stringToSign += s":$encodedData"
     }
 
@@ -154,7 +153,7 @@ class Pusher(val appId: String,
     )
 
     if (customData.nonEmpty) {
-      result += ("channel_data" -> encodeJson(customData))
+      result += ("channel_data" -> encodeJson(customData.get))
     }
 
     encodeJson(result)
