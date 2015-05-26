@@ -40,8 +40,6 @@ object Util {
     if (!regex.pattern.matcher(socketId).matches()) {
       throw new Exception("Invalid socket id: " + socketId)
     }
-
-    socketId
   }
 
   /**
@@ -56,7 +54,5 @@ object Util {
     if (!regex.pattern.matcher(channel).matches()) {
       throw new Exception("Invalid channel name " + channel)
     }
-
-    channel
   }
 }

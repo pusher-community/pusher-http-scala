@@ -69,7 +69,10 @@ class Pusher(val appId: String,
       "data" -> data
     )
 
-    if (socketId.nonEmpty) params += ("socket_id" -> validateSocketId(socketId))
+    if (socketId.nonEmpty) {
+      validateSocketId(socketId)
+      params += ("socket_id" -> socketId)
+    }
 
     Request(self, "POST", "/events", params)
   }
@@ -103,6 +106,7 @@ class Pusher(val appId: String,
   def channelInfo(channel: String,
                   attributes: List[String] = List()): PusherResponse = {
     validateChannel(channel)
+
     var params: Map[String, String] = Map()
     if (attributes.nonEmpty) {
       params += ("info" -> attributes.mkString(","))
@@ -118,6 +122,7 @@ class Pusher(val appId: String,
    */
   def usersInfo(channel: String): PusherResponse = {
     validateChannel(channel)
+    
     Request(self, "GET", s"/channels/$channel/users")
   }
 }

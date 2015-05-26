@@ -112,7 +112,7 @@ class Request(client: Pusher,
    */
   private def handleResponse(response: HttpResponse[String]): PusherResponse = {
     val responseBody: String = response.body
-      response.code match {
+    response.code match {
       case 200 => Right(parse(responseBody).extract[Map[String, Any]])
       case 400 => Left(new PusherBadRequestException(responseBody))
       case 401 => Left(new PusherBadAuthException(responseBody))
