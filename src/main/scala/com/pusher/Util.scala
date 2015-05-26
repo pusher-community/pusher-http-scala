@@ -1,8 +1,14 @@
 package com.pusher
 
+import org.json4s.DefaultFormats
+
 import scala.util.matching.Regex
+import org.json4s.native.Serialization.write
 
 object Util {
+
+  implicit val formats = DefaultFormats
+
   /**
    * Validate required params for Pusher
    * @param credentialMap Map containing pusher credentials
@@ -54,5 +60,14 @@ object Util {
     if (!regex.pattern.matcher(channel).matches()) {
       throw new Exception("Invalid channel name " + channel)
     }
+  }
+
+  /**
+   * Encode Map into a JSON string
+   * @param data Map to be encoded
+   * @return String
+   */
+  def encodeJson(data: Map[String, String]): String = {
+    write(data)
   }
 }
