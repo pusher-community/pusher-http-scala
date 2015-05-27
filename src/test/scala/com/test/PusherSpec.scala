@@ -4,7 +4,7 @@ import com.pusher.Pusher
 import org.scalatest._
 
 class PusherSpec extends FunSpec {
-  describe("Pusher") {
+  describe("Pusher constructor") {
     val pusher = new Pusher("12345", "testkey", "testsecret")
 
     it("should set the port and scheme to 443 and https if not supplied") {
@@ -12,7 +12,7 @@ class PusherSpec extends FunSpec {
       assert(pusher.port == 443)
     }
 
-    it("should set port and scheme to 80 and http if ssl is diasbled") {
+    it("should set port and scheme to 80 and http if ssl is disabled") {
       val pusher = new Pusher("12345", "testkey", "testsecret", false)
 
       assert(pusher.scheme == "http")
@@ -22,7 +22,7 @@ class PusherSpec extends FunSpec {
     describe("validation") {
       it ("should throw an Exception if the key, secret or appId are empty") {
         intercept[Exception] {
-          val fakePusher = new Pusher("", "", "")
+          val pusher = new Pusher("", "", "")
         }
       }
     }

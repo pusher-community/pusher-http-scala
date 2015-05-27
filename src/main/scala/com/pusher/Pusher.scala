@@ -84,15 +84,15 @@ class Pusher(val appId: String,
    * @param attributes Attributes to be returned for each channel
    * @return PusherResponse
    */
-  def channelsInfo(prefixFilter: String = null,
+  def channelsInfo(prefixFilter: Option[String],
                    attributes: Option[List[String]]): PusherResponse = {
     var params: Map[String, String] = Map()
     if (attributes.isDefined) {
       params += ("info" -> attributes.get.mkString(","))
     }
 
-    if (prefixFilter.nonEmpty) {
-      params += ("filter_by_prefix" -> prefixFilter)
+    if (prefixFilter.isDefined) {
+      params += ("filter_by_prefix" -> prefixFilter.get)
     }
 
     Request(self, "GET", "/channels", params)
@@ -152,7 +152,7 @@ class Pusher(val appId: String,
       "auth" -> auth
     )
 
-    if (customData.nonEmpty) {
+    if (customData.isDefined) {
       result += ("channel_data" -> encodeJson(customData.get))
     }
 
