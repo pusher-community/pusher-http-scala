@@ -61,7 +61,7 @@ class Request(client: Pusher,
       new URI(endpoint()).getPath,
       generateQueryString()
     ).mkString("\n")
-    
+
     queryParams += ("auth_signature" -> sign(client.secret, authString))
   }
 
