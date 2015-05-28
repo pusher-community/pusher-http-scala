@@ -5,7 +5,6 @@ import com.pusher.Types.PusherResponse
 
 import org.json4s.native.JsonMethods.parse
 import org.json4s.DefaultFormats
-import org.json4s.native.Serialization.write
 import java.security.MessageDigest
 import scalaj.http._
 
@@ -45,7 +44,6 @@ class Request(client: Pusher,
    */
   private def generateAuth(): Unit = {
     if (verb == "POST") {
-      _body = write(_params)
       queryParams = Map()
       queryParams += ("body_md5" -> generateMD5Hash(_body).toString)
       headers += ("Content-Type" -> "application/json")

@@ -1,9 +1,10 @@
 package com.pusher
 
 import org.json4s.DefaultFormats
+import org.json4s.JsonDSL._
 
 import scala.util.matching.Regex
-import org.json4s.native.Serialization.{write, read}
+import org.json4s.native.Serialization.write
 
 object Util {
 
@@ -72,11 +73,17 @@ object Util {
   }
 
   /**
-   * Decode JSON into a Map
-   * @param data Data to decode
-   * @return
+   * Encode TriggerData into JSON
+   * @param triggerData Data to be encoded
+   * @return String
    */
-  def decodeJson(data: String): Map[String, Any] = {
-    read(data)
+  def encodeTriggerData(triggerData: TriggerData): String = {
+    val json =
+      ("channels" -> triggerData.channels) ~
+      ("name" -> triggerData.eventName) ~
+      ("data" -> triggerData.data) ~
+      ("socket_id" -> triggerData.socketId)
+
+    write(json)
   }
 }

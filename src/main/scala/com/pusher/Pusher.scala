@@ -3,7 +3,7 @@ package com.pusher
 import java.net.URI
 import Util._
 import com.pusher.Types.PusherResponse
-import com.pusher.Signature.{sign, verify}
+import com.pusher.Signature.sign
 
 /**
  *
@@ -51,31 +51,27 @@ class Pusher(val appId: String,
 
   /**
    * Trigger an event
-   * @param channel Channel to trigger the event on
+   * @param channels Channels to trigger the event on
    * @param eventName Name of the event
    * @param data Data to send
    * @param socketId Socked ID to exclude
    * @return PusherResponse
    */
-  def trigger(channel: String,
+  def trigger(channels: List[String],
               eventName: String,
               data: String,
-              socketId: String): PusherResponse = {
+              socketId: Option[String]): PusherResponse = {
     validateEventNameLength(eventName)
     validateDataLength(data)
 
-    var params: Map[String, String] = Map(
-      "name" -> eventName,
-      "channel" -> channel,
-      "data" -> data
-    )
-
-    if (socketId.nonEmpty) {
-      validateSocketId(socketId)
-      params += ("socket_id" -> socketId)
+    if (socketId.isDefined) {
+      validateSocketId(socketId.get)
     }
 
-    Request(self, "POST", "/events", params)
+    val triggerData: TriggerData =
+      TriggerData(channels, eventName, data, socketId)
+
+    Request(self, "POST", "/events", null, encodeTriggerData(triggerData))
   }
 
   /**
