@@ -19,11 +19,11 @@ import scalaj.http._
 class Request(client: Pusher,
               verb: String,
               path: String,
-              private var _params: Map[String, String] = Map(),
-              private var _body: String = null) {
+              private var _params: Option[Map[String, String]],
+              private var _body: Option[String]) {
 
   private var headers: Map[String, String] = Map()
-  private var queryParams: Map[String, String] = _params
+  private var queryParams: Map[String, String] = _params.getOrElse(Map())
 
   implicit val formats = DefaultFormats
 
@@ -31,13 +31,13 @@ class Request(client: Pusher,
    * Getter for body
    * @return String
    */
-  def body = _body
+  def body = _body.getOrElse("")
 
   /**
    * Getter for params
    * @return Map
    */
-  def params = _params
+  def params = _params.getOrElse(Map())
 
   /**
    * Generate authentication for the request
@@ -45,7 +45,9 @@ class Request(client: Pusher,
   private def generateAuth(): Unit = {
     if (verb == "POST") {
       queryParams = Map()
-      queryParams += ("body_md5" -> generateMD5Hash(_body).toString)
+      if (_body.isDefined) {
+        queryParams += ("body_md5" -> generateMD5Hash(_body.get).toString)
+      }
       headers += ("Content-Type" -> "application/json")
     }
 
@@ -131,7 +133,7 @@ class Request(client: Pusher,
       addHeaders(Http(endpoint()).method(verb).params(queryParams))
     verb match {
       case "POST" =>
-        handleResponse(request.postData(_body).asString)
+        handleResponse(request.postData(_body.getOrElse("")).asString)
       case "GET" =>
         handleResponse(request.asString)
     }
@@ -155,8 +157,8 @@ object Request {
   def apply(client: Pusher,
             verb: String,
             path: String,
-            params: Map[String, String] = Map(),
-            body: String = null) = {
+            params: Option[Map[String, String]],
+            body: Option[String]) = {
     new Request(client, verb, path, params, body).makeRequest()
   }
 }

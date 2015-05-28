@@ -71,7 +71,7 @@ class Pusher(val appId: String,
     val triggerData: TriggerData =
       TriggerData(channels, eventName, data, socketId)
 
-    Request(self, "POST", "/events", null, encodeTriggerData(triggerData))
+    Request(self, "POST", "/events", None, Some(encodeTriggerData(triggerData)))
   }
 
   /**
@@ -91,7 +91,7 @@ class Pusher(val appId: String,
       params += ("filter_by_prefix" -> prefixFilter.get)
     }
 
-    Request(self, "GET", "/channels", params)
+    Request(self, "GET", "/channels", Some(params), None)
   }
 
   /**
@@ -109,7 +109,7 @@ class Pusher(val appId: String,
       params += ("info" -> attributes.get.mkString(","))
     }
 
-    Request(self, "GET", s"/channels/$channel", params)
+    Request(self, "GET", s"/channels/$channel", Some(params), None)
   }
 
   /**
@@ -120,7 +120,7 @@ class Pusher(val appId: String,
   def usersInfo(channel: String): PusherResponse = {
     validateChannel(channel)
 
-    Request(self, "GET", s"/channels/$channel/users")
+    Request(self, "GET", s"/channels/$channel/users", None, None)
   }
 
   /**
