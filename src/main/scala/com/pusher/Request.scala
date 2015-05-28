@@ -3,6 +3,7 @@ package com.pusher
 import com.pusher.Signature.sign
 import com.pusher.Types.PusherResponse
 
+import java.net.URI
 import org.json4s.native.JsonMethods.parse
 import org.json4s.DefaultFormats
 import java.security.MessageDigest
@@ -21,8 +22,6 @@ class Request(client: Pusher,
               path: String,
               private var _params: Option[Map[String, String]],
               private var _body: Option[String]) {
-
-  private var headers: Map[String, String] = Map()
   private var queryParams: Map[String, String] = _params.getOrElse(Map())
 
   implicit val formats = DefaultFormats
@@ -45,10 +44,10 @@ class Request(client: Pusher,
   private def generateAuth(): Unit = {
     if (verb == "POST") {
       queryParams = Map()
+
       if (_body.isDefined) {
         queryParams += ("body_md5" -> generateMD5Hash(_body.get).toString)
       }
-      headers += ("Content-Type" -> "application/json")
     }
 
     queryParams += (
@@ -59,10 +58,10 @@ class Request(client: Pusher,
 
     val authString = List(
       verb,
-      path,
+      new URI(endpoint()).getPath,
       generateQueryString()
     ).mkString("\n")
-
+    
     queryParams += ("auth_signature" -> sign(client.secret, authString))
   }
 
@@ -95,23 +94,13 @@ class Request(client: Pusher,
   }
 
   /**
-   * Add headers to an HTTP request if they exist
-   * @param request HTTPRequest to which headers must be added
-   * @return HTTPRequest
-   */
-  private def addHeaders(request: HttpRequest): HttpRequest = {
-    if (headers.nonEmpty) request.headers(headers)
-
-    request
-  }
-
-  /**
    * Handle HTTP responses
    * @param response The HTTP response object
    * @return PusherResponse
    */
   private def handleResponse(response: HttpResponse[String]): PusherResponse = {
     val responseBody: String = response.body
+
     response.code match {
       case 200 => Right(parse(responseBody).extract[Map[String, Any]])
       case 400 => Left(new PusherBadRequestException(responseBody))
@@ -130,10 +119,13 @@ class Request(client: Pusher,
   def makeRequest(): PusherResponse = {
     generateAuth()
     val request: HttpRequest =
-      addHeaders(Http(endpoint()).method(verb).params(queryParams))
+      Http(endpoint()).method(verb).params(queryParams)
+
     verb match {
       case "POST" =>
-        handleResponse(request.postData(_body.getOrElse("")).asString)
+        val postRequest: HttpRequest =
+          request.postData(_body.getOrElse("")).header("Content-Type", "application/json")
+        handleResponse(postRequest.asString)
       case "GET" =>
         handleResponse(request.asString)
     }
@@ -162,4 +154,3 @@ object Request {
     new Request(client, verb, path, params, body).makeRequest()
   }
 }
-
