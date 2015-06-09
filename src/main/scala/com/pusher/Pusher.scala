@@ -3,7 +3,7 @@ package com.pusher
 import java.net.URI
 import Util._
 import com.pusher.Types.PusherResponse
-import com.pusher.Signature.sign
+import com.pusher.Signature.{sign, verify}
 
 /**
  *
@@ -153,6 +153,34 @@ class Pusher(val appId: String,
     }
 
     encodeJson(result)
+  }
+
+  /**
+   * Validate webhook messages
+   * @param key Key used to sign the body
+   * @param signature Signature given with the body
+   * @param body Body that needs to be verified
+   * @return Option
+   */
+  def validateWebhook(key: String,
+                      signature: String,
+                      body: String): Option[Map[String, Any]] = {
+    if (key != self.key) return None
+
+    if (!verify(secret, body, signature)) return None
+
+    val bodyData = decodeJson(body)
+    val timeMs = bodyData.get("time_ms")
+
+    if (timeMs.isEmpty) return None
+
+    val extractedTime = timeMs match {
+      case x:Int => x
+    }
+
+    if ((System.currentTimeMillis / 1000 - extractedTime) > 300000) return None
+
+    Some(bodyData)
   }
 }
 
