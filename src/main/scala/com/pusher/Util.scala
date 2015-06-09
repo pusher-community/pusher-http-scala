@@ -4,7 +4,7 @@ import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
 
 import scala.util.matching.Regex
-import org.json4s.native.Serialization.write
+import org.json4s.native.Serialization.{write, read}
 
 object Util {
 
@@ -70,6 +70,15 @@ object Util {
    */
   def encodeJson(data: Map[String, Any]): String = {
     write(data)
+  }
+
+  /**
+   * Decode a JSON string into a Map
+   * @param data String to be decoded
+   * @return Map[String, Any]
+   */
+  def decodeJson(data: String): Map[String, Any] = {
+    read(data)
   }
 
   /**
