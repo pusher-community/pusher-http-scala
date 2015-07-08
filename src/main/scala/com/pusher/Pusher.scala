@@ -175,7 +175,7 @@ class Pusher(val appId: String,
     if (timeMs.isEmpty) return None
 
     val extractedTime = timeMs match {
-      case x:Int => x
+      case Some(x: Int) => x
     }
 
     if ((System.currentTimeMillis / 1000 - extractedTime) > 300000) return None
