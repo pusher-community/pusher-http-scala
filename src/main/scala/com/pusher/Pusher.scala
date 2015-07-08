@@ -1,155 +1,137 @@
 package com.pusher
 
-import java.net.URI
-import Util._
+import com.pusher.Util.{
+  validateChannel,
+  validateEventName,
+  validateChannelCount,
+  validateDataLength,
+  encodeTriggerData,
+  encodeJson,
+  decodeJson
+}
 import com.pusher.Types.PusherResponse
 import com.pusher.Signature.{sign, verify}
 
 /**
- *
- * @param appId Pusher application id
- * @param key Pusher application key
- * @param secret Pusher application secret
- * @param ssl If SSL should be used or not
- * @param host Host to connect to
- * @param timeout Request timeout in seconds
+ * Pusher object
  */
-class Pusher(val appId: String,
-             val key: String,
-             val secret: String,
-             val ssl: Boolean = true,
-             val host: String = "api.pusherapp.com",
-             val timeout: Int = 5) {
-
-  self =>
-
-  private var _scheme: String = "http"
-  private var _port: Int = 80
-
-  validateCredentials(Map(
-    "appId" -> appId,
-    "key" -> key,
-    "secret" -> secret
-  ))
-
-  if (ssl) {
-    _scheme = "https"
-    _port = 443
-  }
-
-  /**
-   * Getter for the scheme
-   * @return String
-   */
-  def scheme = _scheme
-
-  /**
-   * Getter for the port number
-   * @return Int
-   */
-  def port = _port
+object Pusher {
 
   /**
    * Trigger an event
+   * @param pusherConfig Pusher config details
    * @param channels Channels to trigger the event on
    * @param eventName Name of the event
    * @param data Data to send
    * @param socketId Socked ID to exclude
    * @return PusherResponse
    */
-  def trigger(channels: List[String],
+  def trigger(pusherConfig: PusherConfig,
+              channels: List[String],
               eventName: String,
               data: String,
-              socketId: Option[String]): PusherResponse = {
-    validateEventNameLength(eventName)
-    validateDataLength(data)
+              socketId: Option[String] = None): PusherResponse = {
+    val triggerData: TriggerData = TriggerData(channels, eventName, data, socketId)
+    val requestParams: RequestParams =
+      RequestParams(pusherConfig, "POST", "/events", None, Some(encodeTriggerData(triggerData)))
 
-    if (socketId.isDefined) {
-      validateSocketId(socketId.get)
-    }
+    val validators = List(
+      StringValidator(validateEventName, eventName),
+      StringValidator(validateDataLength, data),
+      ListValidator(validateChannelCount, channels)
+    )
 
-    val triggerData: TriggerData =
-      TriggerData(channels, eventName, data, socketId)
-
-    Request(self, "POST", "/events", None, Some(encodeTriggerData(triggerData)))
+    Request.validateAndMakeRequest(requestParams, validators)
   }
 
   /**
    * Get information for multiple channels
+   * @param pusherConfig Pusher config details
    * @param prefixFilter Prefix to filter channels with
    * @param attributes Attributes to be returned for each channel
    * @return PusherResponse
    */
-  def channelsInfo(prefixFilter: Option[String],
+  def channelsInfo(pusherConfig: PusherConfig,
+                   prefixFilter: Option[String],
                    attributes: Option[List[String]]): PusherResponse = {
-    var params: Map[String, String] = Map()
-    if (attributes.isDefined) {
-      params += ("info" -> attributes.get.mkString(","))
-    }
+    val attributeParams: Map[String, String] =
+      if (attributes.isDefined) {
+        Map("info" -> attributes.get.mkString(","))
+      } else Map()
 
-    if (prefixFilter.isDefined) {
-      params += ("filter_by_prefix" -> prefixFilter.get)
-    }
+    val prefixParams: Map[String, String] =
+      if (prefixFilter.isDefined) {
+        Map("filter_by_prefix" -> prefixFilter.get)
+      } else Map()
 
-    Request(self, "GET", "/channels", Some(params), None)
+    val params = attributeParams ++ prefixParams
+    val requestParams: RequestParams =
+      RequestParams(pusherConfig, "GET", "/channels", Some(params), None)
+
+    Request.makeRequest(requestParams)
   }
 
   /**
    * Get info for one channel
+   * @param pusherConfig Pusher config details
    * @param channel Name of channel
    * @param attributes Attributes requested
    * @return PusherResponse
    */
-  def channelInfo(channel: String,
+  def channelInfo(pusherConfig: PusherConfig,
+                  channel: String,
                   attributes: Option[List[String]]): PusherResponse = {
-    validateChannel(channel)
+    val params: Map[String, String] =
+      if (attributes.isDefined) {
+        Map("info" -> attributes.get.mkString(","))
+      } else Map()
 
-    var params: Map[String, String] = Map()
-    if (attributes.isDefined) {
-      params += ("info" -> attributes.get.mkString(","))
-    }
+    val requestParams: RequestParams =
+      RequestParams(pusherConfig, "GET", s"/channels/$channel", Some(params), None)
 
-    Request(self, "GET", s"/channels/$channel", Some(params), None)
+    Request.makeRequest(requestParams)
   }
 
   /**
    * Fetch user id's subscribed to a channel
+   * @param pusherConfig Pusher config details
    * @param channel Name of channel
    * @return PusherResponse
    */
-  def usersInfo(channel: String): PusherResponse = {
-    validateChannel(channel)
+  def usersInfo(pusherConfig: PusherConfig, channel: String): PusherResponse = {
+    val requestParams: RequestParams =
+      RequestParams(pusherConfig, "GET", s"/channels/$channel/users", None, None)
+    val validators = List(StringValidator(validateChannel, channel))
 
-    Request(self, "GET", s"/channels/$channel/users", None, None)
+    Request.validateAndMakeRequest(requestParams, validators)
   }
 
   /**
    * Generate a delegated client subscription token
+   * @param pusherConfig Pusher config details
    * @param channel Channel to authenticate
    * @param socketId SocketId that required auth
    * @param customData Used on presence channels for info
    * @return String
    */
-  def authenticate(channel: String,
+  def authenticate(pusherConfig: PusherConfig,
+                   channel: String,
                    socketId: String,
                    customData: Option[Map[String, String]]): String = {
-    validateChannel(channel)
-    validateSocketId(socketId)
-
-    var stringToSign: String = s"$socketId:$channel"
+    val stringToSign: String = s"$socketId:$channel"
     if (customData.isDefined) {
       val encodedData: String = encodeJson(customData.get)
-      stringToSign += s":$encodedData"
+      stringToSign ++ s":$encodedData"
     }
 
-    val signature: String = sign(secret, stringToSign)
-    val auth: String = s"$key:$signature"
-    var result: Map[String, String] = Map(
+    val signature: String = sign(pusherConfig.secret, stringToSign)
+    val auth: String = s"$pusherConfig.key:$signature"
+    val result: Map[String, String] = Map(
       "auth" -> auth
     )
 
     if (customData.isDefined) {
-      result += ("channel_data" -> encodeJson(customData.get))
+      result ++ Map("channel_data" -> encodeJson(customData.get))
     }
 
     encodeJson(result)
@@ -157,57 +139,32 @@ class Pusher(val appId: String,
 
   /**
    * Validate webhook messages
+   * @param pusherConfig Pusher config details
    * @param key Key used to sign the body
    * @param signature Signature given with the body
    * @param body Body that needs to be verified
    * @return Option
    */
-  def validateWebhook(key: String,
+  def validateWebhook(pusherConfig: PusherConfig,
+                      key: String,
                       signature: String,
                       body: String): Option[Map[String, Any]] = {
-    if (key != self.key) return None
+    if (key != pusherConfig.key) return None
 
-    if (!verify(secret, body, signature)) return None
+    if (!verify(pusherConfig.secret, body, signature)) return None
 
     val bodyData = decodeJson(body)
     val timeMs = bodyData.get("time_ms")
 
     if (timeMs.isEmpty) return None
 
-    val extractedTime = timeMs match {
-      case Some(x: Int) => x
+    timeMs match {
+      case Some(time: Int) =>
+        if ((System.currentTimeMillis / 1000 - time) > 300000) return None
+      case Some(time: Any) => return None
+      case None => return None
     }
-
-    if ((System.currentTimeMillis / 1000 - extractedTime) > 300000) return None
 
     Some(bodyData)
   }
 }
-
-object Pusher {
-  /**
-   * Companion object
-   *
-   * Instantiate Pusher using a URI
-   * @param uri The pusher URI to be parsed
-   * @return Pusher
-   */
-  def fromUrl(uri: String) = {
-    val url: URI = new URI(uri)
-    val appId: String = url.getPath.split("/")(2)
-    val key: String = url.getUserInfo.split(":")(0)
-    val secret: String = url.getUserInfo.split(":")(1)
-    var ssl: Boolean = false
-    val host: String = url.getHost
-
-    if (url.getScheme == "http") {
-      ssl = false
-    } else {
-      ssl = true
-    }
-
-    new Pusher(appId, key, secret, ssl, host)
-  }
-}
-
-

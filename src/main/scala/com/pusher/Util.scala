@@ -1,5 +1,7 @@
 package com.pusher
 
+import java.security.MessageDigest
+
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
 
@@ -11,56 +13,60 @@ object Util {
   implicit val formats = DefaultFormats
 
   /**
-   * Validate required params for Pusher
-   * @param credentialMap Map containing pusher credentials
+   * Check if event name is valid
+   * @param eventName Event name to be validated
+   * @return Option[ValidationError]
    */
-  def validateCredentials(credentialMap: Map[String, String]): Unit = {
-    credentialMap.foreach {
-      case(k, v) =>
-        if (v.isEmpty) throw new Exception("Empty credential " + k)
-    }
+  def validateEventName(eventName: String): Option[ValidationError] = {
+    if (eventName.length > 200) {
+      Some(ValidationError("Event name is too long"))
+    } else None
   }
 
   /**
-   * Checks if an event name is too long
-   * @param eventName Name of the event
+   * Check if the data size is under the allowable limit
+   * @param data Data string to be validated
+   * @return Option[ValidationError]
    */
-  def validateEventNameLength(eventName: String): Unit = {
-    if (eventName.length > 200) throw new Exception("Event name is too long")
+  def validateDataLength(data: String): Option[ValidationError] = {
+    if (data.getBytes.length > 10240) {
+      Some(ValidationError("Data size is above 10240 bytes"))
+    } else None
   }
 
   /**
-   * Check if data size is too large
-   * @param data Data string to be checked for
-   */
-  def validateDataLength(data: String): Unit = {
-    if (data.length > 10240) throw new Exception("Data is too big")
-  }
-
-  /**
-   * Check if socket id is valid
+   * Check if socket id matches the correct pattern
    * @param socketId Socket id to be validated
-   * @return String
+   * @return Option[ValidationError]
    */
-  def validateSocketId(socketId: String): Unit = {
+  def validateSocketId(socketId: String): Option[ValidationError] = {
     val regex: Regex = new Regex("\\A\\d+\\.\\d+\\z")
     if (!regex.pattern.matcher(socketId).matches()) {
-      throw new Exception("Invalid socket id: " + socketId)
-    }
+      Some(ValidationError("Invalid socket id"))
+    } else None
   }
 
   /**
-   * Validate a channel
-   * @param channel Channel to be validated
-   * @return String
+   * Check if channel names are valid
+   * @param channel Channel to be checked
+   * @return Option[ValidationError]
    */
-  def validateChannel(channel: String): Unit = {
-    if (channel.length > 200) throw new Exception("Channel name is too long " + channel)
-
+  def validateChannel(channel: String): Option[ValidationError] = {
     val regex: Regex = new Regex("\\A[-a-zA-Z0-9_=@,.;]+\\z")
     if (!regex.pattern.matcher(channel).matches()) {
-      throw new Exception("Invalid channel name " + channel)
-    }
+      Some(ValidationError("Invalid channel name"))
+    } else None
+  }
+
+  /**
+   * Validate number of channels when triggering.
+   * @param channels List of channels
+   * @return Option[ValidationError]
+   */
+  def validateChannelCount(channels: List[String]): Option[ValidationError] = {
+    if (channels.length > 10) {
+      Some(ValidationError("Max 10 channels allowed"))
+    } else None
   }
 
   /**
@@ -95,4 +101,15 @@ object Util {
 
     write(json)
   }
+
+  /**
+   * Generate an MD5 hash using the body
+   * @param s String for which the hash is to be generated
+   * @return String
+   */
+   def generateMD5Hash(s: String): String = {
+    MessageDigest.getInstance("MD5").digest(s.getBytes).map("%02x".format(_)).mkString
+  }
 }
+
+

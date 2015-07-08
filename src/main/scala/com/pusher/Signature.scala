@@ -26,10 +26,6 @@ object Signature {
    * @return
    */
   def verify(secret: String, stringToSign: String, signature: String): Boolean = {
-    if (sign(secret, stringToSign) == signature) {
-      true
-    } else {
-      false
-    }
+    if (sign(secret, stringToSign) == signature) true else false
   }
 }
