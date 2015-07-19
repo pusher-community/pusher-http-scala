@@ -4,6 +4,9 @@ import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Mac
 
 object Signature {
+
+  val SHA256 = "HmacSHA256"
+
   /**
    * Sign a string with a secret using HMAC SHA256
    * @param secret Secret to be used to sign
@@ -11,7 +14,6 @@ object Signature {
    * @return String
    */
   def sign(secret: String, stringToSign: String): String = {
-    val SHA256 = "HmacSHA256"
     val mac = Mac.getInstance(SHA256)
     mac.init(new SecretKeySpec(secret.getBytes, SHA256))
 
