@@ -114,30 +114,31 @@ object Pusher {
    * @param pusherConfig Pusher config details
    * @param channel Channel to authenticate
    * @param socketId SocketId that required auth
-   * @param customData Used on presence channels for info
+   * @param customDataOpt Used on presence channels for info
    * @return String
    */
   def authenticate(pusherConfig: PusherConfig,
                    channel: String,
                    socketId: String,
-                   customData: Option[Map[String, String]]): String = {
-    val stringToSign: String = s"$socketId:$channel"
-    if (customData.isDefined) {
-      val encodedData: String = encodeJson(customData.get)
-      stringToSign ++ s":$encodedData"
-    }
+                   customDataOpt: Option[Map[String, String]]): String = {
+
+    val stringToSign: String = customDataOpt.map(
+      customData => {
+        s"$socketId:$channel:${encodeJson(customData)}"
+      }
+    ).getOrElse(s"$socketId:$channel")
 
     val signature: String = sign(pusherConfig.secret, stringToSign)
-    val auth: String = s"$pusherConfig.key:$signature"
+    val auth: String = s"${pusherConfig.key}:$signature"
     val result: Map[String, String] = Map(
       "auth" -> auth
     )
 
-    if (customData.isDefined) {
-      result ++ Map("channel_data" -> encodeJson(customData.get))
-    }
-
-    encodeJson(result)
+    encodeJson(
+      result ++ customDataOpt.map(
+        customData => Map("channel_data" -> encodeJson(customData))
+      ).getOrElse(Map.empty[String, String])
+    )
   }
 
   /**
