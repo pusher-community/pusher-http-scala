@@ -102,19 +102,22 @@ object Request {
    * @return PusherResponse
    */
   def makeRequest(requestParams: RequestParams): PusherResponse = {
-    val auth = generateAuth(requestParams)
-    val initRequest: HttpRequest =
-      Http(endpoint(requestParams.config, requestParams.path))
-        .method(requestParams.verb)
-        .params(auth)
+    val initRequest: HttpRequest = Http(
+      endpoint(requestParams.config, requestParams.path)
+    ).method(
+      requestParams.verb
+    ).params(
+      generateAuth(requestParams)
+    )
 
-    val request: HttpRequest =
-      if (requestParams.verb.equals("POST")) {
-        initRequest.postData(requestParams.body.getOrElse(""))
-          .header("Content-Type", "application/json")
-      } else {
-        initRequest
+    val request: HttpRequest = requestParams.verb match {
+      case "POST" => {
+        initRequest.postData(
+          requestParams.body.getOrElse("")
+        ).header("Content-Type", "application/json")
       }
+      case _ => initRequest
+    }
 
     handleResponse(Try(request.asString))
   }
