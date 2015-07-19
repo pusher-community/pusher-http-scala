@@ -141,6 +141,9 @@ object Pusher {
     )
   }
 
+  // TODO
+  // Could probably be improved by returning an Either
+  // with an error message explaining why this was failed
   /**
    * Validate webhook messages
    * @param pusherConfig Pusher config details
