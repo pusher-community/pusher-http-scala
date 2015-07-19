@@ -1,10 +1,13 @@
 package com.pusher
 
-import com.pusher.Util.{
+import com.pusher.RequestValidator.{
   validateChannel,
   validateEventName,
   validateChannelCount,
-  validateDataLength,
+  validateDataLength
+}
+
+import com.pusher.Util.{
   encodeTriggerData,
   encodeJson,
   decodeJson
