@@ -47,28 +47,31 @@ object Pusher {
   /**
    * Get information for multiple channels
    * @param pusherConfig Pusher config details
-   * @param prefixFilter Prefix to filter channels with
-   * @param attributes Attributes to be returned for each channel
+   * @param prefixFilterOpt Prefix to filter channels with
+   * @param attributesOpt Attributes to be returned for each channel
    * @return PusherResponse
    */
   def channelsInfo(pusherConfig: PusherConfig,
-                   prefixFilter: Option[String],
-                   attributes: Option[List[String]]): PusherResponse = {
-    val attributeParams: Map[String, String] =
-      if (attributes.isDefined) {
-        Map("info" -> attributes.get.mkString(","))
-      } else Map()
+                   prefixFilterOpt: Option[String],
+                   attributesOpt: Option[List[String]]): PusherResponse = {
 
-    val prefixParams: Map[String, String] =
-      if (prefixFilter.isDefined) {
-        Map("filter_by_prefix" -> prefixFilter.get)
-      } else Map()
+    val attributeParams: Map[String, String] = attributesOpt.map(
+      attributes => Map("info" -> attributes.mkString(","))
+    ).getOrElse(Map.empty[String, String])
 
-    val params = attributeParams ++ prefixParams
-    val requestParams: RequestParams =
-      RequestParams(pusherConfig, "GET", "/channels", Some(params), None)
+    val prefixParams: Map[String, String] = prefixFilterOpt.map(
+      prefixFilter => Map("filter_by_prefix" -> prefixFilter)
+    ).getOrElse(Map.empty[String, String])
 
-    Request.makeRequest(requestParams)
+    Request.makeRequest(
+      RequestParams(
+        pusherConfig,
+        "GET",
+        "/channels",
+        Some(attributeParams ++ prefixParams),
+        None
+      )
+    )
   }
 
   /**
