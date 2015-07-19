@@ -65,8 +65,7 @@ object Request {
    * @return String
    */
   private def endpoint(config: PusherConfig, path: String): String = {
-    val appId = config.appId
-    config.scheme + "://" + config.getHost + ":" + config.getPort + s"/apps/$appId" + path
+    s"${config.scheme}://${config.getHost}:${config.getPort}/apps/${config.appId}$path"
   }
 
   /**
