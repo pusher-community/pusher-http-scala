@@ -25,9 +25,9 @@ object Signature {
    * @param secret Secret to be used to sign
    * @param stringToSign String to sign
    * @param signature Computed signature
-   * @return
+   * @return Boolean
    */
   def verify(secret: String, stringToSign: String, signature: String): Boolean = {
-    if (sign(secret, stringToSign) == signature) true else false
+    sign(secret, stringToSign) == signature
   }
 }
