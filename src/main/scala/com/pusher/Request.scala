@@ -28,16 +28,17 @@ object Request {
       "auth_timestamp" -> (System.currentTimeMillis / 1000).toString
     )
 
-    val optionalParams: Map[String, String] =
-      if (params.isDefined) params.get else Map()
+    val optionalParams: Map[String, String] = params.getOrElse(
+      Map.empty[String, String]
+    )
 
-    val body = requestParams.body
-    val bodyParams: Map[String, String] =
-      if (requestParams.verb.equals("POST") && body.isDefined) {
-        Map("body_md5" -> generateMD5Hash(body.get).toString)
-      } else Map()
+    val bodyParams: Map[String, String] = (requestParams.verb, requestParams.body) match {
+      case ("POST", Some(body)) => Map("body_md5" -> generateMD5Hash(body))
+      case _ => Map.empty[String, String]
+    }
 
     val authParams = initialParams ++ optionalParams ++ bodyParams
+
     val authString: String = List(
       requestParams.verb,
       new URI(endpoint(requestParams.config, requestParams.path)).getPath,
