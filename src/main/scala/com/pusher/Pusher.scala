@@ -159,36 +159,36 @@ object Pusher {
     )
   }
 
-  // TODO
-  // Return an Either
   /**
    * Validate webhook messages
    * @param pusherConfig Pusher config details
    * @param key Key used to sign the body
    * @param signature Signature given with the body
    * @param body Body that needs to be verified
-   * @return Option
+   * @return PusherResponse
    */
   def validateWebhook(pusherConfig: PusherConfig,
                       key: String,
                       signature: String,
-                      body: String): Option[Map[String, Any]] = {
-    if (key != pusherConfig.key) return None
+                      body: String): PusherResponse = {
+    if (key != pusherConfig.key) return Left(WebhookError("Key's did not match when verifying webhook"))
 
-    if (!verify(pusherConfig.secret, body, signature)) return None
+    if (!verify(pusherConfig.secret, body, signature)) return Left(WebhookError("Signatures do not match"))
 
     val bodyData = decodeJson(body)
     val timeMs = bodyData.get("time_ms")
 
-    if (timeMs.isEmpty) return None
+    if (timeMs.isEmpty) return Left(WebhookError("No timestamp supplied with Webhook"))
 
     timeMs match {
       case Some(time: Int) =>
-        if ((System.currentTimeMillis / 1000 - time) > 300000) return None
-      case Some(time: Any) => return None
-      case None => return None
+        if ((System.currentTimeMillis / 1000 - time) > 300000) {
+          return Left(WebhookError("Webhook time not within 300 seconds"))
+        }
+      case Some(time: Any) => return Left(WebhookError("Invalid time format"))
+      case None => return Left(WebhookError("No timestamp supplied with Webhook"))
     }
 
-    Some(bodyData)
+    Right(bodyData)
   }
 }

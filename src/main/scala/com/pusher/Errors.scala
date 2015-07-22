@@ -43,3 +43,9 @@ case class PusherRequestFailedError(message: String) extends PusherError
  */
 case class ValidationError(message: String) extends PusherError
 
+/**
+ * Error case class for Webhooks
+ * @param message Error message
+ */
+case class WebhookError(message: String) extends PusherError
+
