@@ -1,13 +1,16 @@
 package com.pusher
 
+import com.pusher.RequestValidator.{
+validateChannel,
+validateEventName,
+validateChannelCount,
+validateDataLength
+}
+
 import com.pusher.Util.{
-  validateChannel,
-  validateEventName,
-  validateChannelCount,
-  validateDataLength,
-  encodeTriggerData,
-  encodeJson,
-  decodeJson
+encodeTriggerData,
+encodeJson,
+decodeJson
 }
 import com.pusher.Types.PusherResponse
 import com.pusher.Signature.{sign, verify}
@@ -32,8 +35,6 @@ object Pusher {
               data: String,
               socketId: Option[String] = None): PusherResponse = {
     val triggerData: TriggerData = TriggerData(channels, eventName, data, socketId)
-    val requestParams: RequestParams =
-      RequestParams(pusherConfig, "POST", "/events", None, Some(encodeTriggerData(triggerData)))
 
     val validators = List(
       StringValidator(validateEventName, eventName),
@@ -41,34 +42,46 @@ object Pusher {
       ListValidator(validateChannelCount, channels)
     )
 
-    Request.validateAndMakeRequest(requestParams, validators)
+    Request.validateAndMakeRequest(
+      RequestParams(
+        pusherConfig,
+        "POST",
+        "/events",
+        None,
+        Some(encodeTriggerData(triggerData))
+      ),
+      validators
+    )
   }
 
   /**
    * Get information for multiple channels
    * @param pusherConfig Pusher config details
-   * @param prefixFilter Prefix to filter channels with
-   * @param attributes Attributes to be returned for each channel
+   * @param prefixFilterOpt Prefix to filter channels with
+   * @param attributesOpt Attributes to be returned for each channel
    * @return PusherResponse
    */
   def channelsInfo(pusherConfig: PusherConfig,
-                   prefixFilter: Option[String],
-                   attributes: Option[List[String]]): PusherResponse = {
-    val attributeParams: Map[String, String] =
-      if (attributes.isDefined) {
-        Map("info" -> attributes.get.mkString(","))
-      } else Map()
+                   prefixFilterOpt: Option[String],
+                   attributesOpt: Option[List[String]]): PusherResponse = {
 
-    val prefixParams: Map[String, String] =
-      if (prefixFilter.isDefined) {
-        Map("filter_by_prefix" -> prefixFilter.get)
-      } else Map()
+    val attributeParams: Map[String, String] = attributesOpt.map(
+      attributes => Map("info" -> attributes.mkString(","))
+    ).getOrElse(Map.empty[String, String])
 
-    val params = attributeParams ++ prefixParams
-    val requestParams: RequestParams =
-      RequestParams(pusherConfig, "GET", "/channels", Some(params), None)
+    val prefixParams: Map[String, String] = prefixFilterOpt.map(
+      prefixFilter => Map("filter_by_prefix" -> prefixFilter)
+    ).getOrElse(Map.empty[String, String])
 
-    Request.makeRequest(requestParams)
+    Request.makeRequest(
+      RequestParams(
+        pusherConfig,
+        "GET",
+        "/channels",
+        Some(attributeParams ++ prefixParams),
+        None
+      )
+    )
   }
 
   /**
@@ -86,10 +99,15 @@ object Pusher {
         Map("info" -> attributes.get.mkString(","))
       } else Map()
 
-    val requestParams: RequestParams =
-      RequestParams(pusherConfig, "GET", s"/channels/$channel", Some(params), None)
-
-    Request.makeRequest(requestParams)
+    Request.makeRequest(
+      RequestParams(
+        pusherConfig,
+        "GET",
+        s"/channels/$channel",
+        Some(params),
+        None
+      )
+    )
   }
 
   /**
@@ -99,11 +117,16 @@ object Pusher {
    * @return PusherResponse
    */
   def usersInfo(pusherConfig: PusherConfig, channel: String): PusherResponse = {
-    val requestParams: RequestParams =
-      RequestParams(pusherConfig, "GET", s"/channels/$channel/users", None, None)
-    val validators = List(StringValidator(validateChannel, channel))
-
-    Request.validateAndMakeRequest(requestParams, validators)
+    Request.validateAndMakeRequest(
+      RequestParams(
+        pusherConfig,
+        "GET",
+        s"/channels/$channel/users",
+        None,
+        None
+      ),
+      List(StringValidator(validateChannel, channel))
+    )
   }
 
   /**
@@ -111,32 +134,33 @@ object Pusher {
    * @param pusherConfig Pusher config details
    * @param channel Channel to authenticate
    * @param socketId SocketId that required auth
-   * @param customData Used on presence channels for info
+   * @param customDataOpt Used on presence channels for info
    * @return String
    */
   def authenticate(pusherConfig: PusherConfig,
                    channel: String,
                    socketId: String,
-                   customData: Option[Map[String, String]]): String = {
-    val stringToSign: String = s"$socketId:$channel"
-    if (customData.isDefined) {
-      val encodedData: String = encodeJson(customData.get)
-      stringToSign ++ s":$encodedData"
-    }
+                   customDataOpt: Option[Map[String, String]]): String = {
+
+    val stringToSign: String = customDataOpt.map(
+      customData => {
+        s"$socketId:$channel:${encodeJson(customData)}"
+      }
+    ).getOrElse(s"$socketId:$channel")
 
     val signature: String = sign(pusherConfig.secret, stringToSign)
-    val auth: String = s"$pusherConfig.key:$signature"
-    val result: Map[String, String] = Map(
-      "auth" -> auth
+    val auth: String = s"${pusherConfig.key}:$signature"
+    val result: Map[String, String] = Map("auth" -> auth)
+
+    encodeJson(
+      result ++ customDataOpt.map(
+        customData => Map("channel_data" -> encodeJson(customData))
+      ).getOrElse(Map.empty[String, String])
     )
-
-    if (customData.isDefined) {
-      result ++ Map("channel_data" -> encodeJson(customData.get))
-    }
-
-    encodeJson(result)
   }
 
+  // TODO
+  // Return an Either
   /**
    * Validate webhook messages
    * @param pusherConfig Pusher config details

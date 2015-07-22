@@ -28,16 +28,17 @@ object Request {
       "auth_timestamp" -> (System.currentTimeMillis / 1000).toString
     )
 
-    val optionalParams: Map[String, String] =
-      if (params.isDefined) params.get else Map()
+    val optionalParams: Map[String, String] = params.getOrElse(
+      Map.empty[String, String]
+    )
 
-    val body = requestParams.body
-    val bodyParams: Map[String, String] =
-      if (requestParams.verb.equals("POST") && body.isDefined) {
-        Map("body_md5" -> generateMD5Hash(body.get).toString)
-      } else Map()
+    val bodyParams: Map[String, String] = (requestParams.verb, requestParams.body) match {
+      case ("POST", Some(body)) => Map("body_md5" -> generateMD5Hash(body))
+      case _ => Map.empty[String, String]
+    }
 
     val authParams = initialParams ++ optionalParams ++ bodyParams
+
     val authString: String = List(
       requestParams.verb,
       new URI(endpoint(requestParams.config, requestParams.path)).getPath,
@@ -64,8 +65,7 @@ object Request {
    * @return String
    */
   private def endpoint(config: PusherConfig, path: String): String = {
-    val appId = config.appId
-    config.scheme + "://" + config.getHost + ":" + config.getPort + s"/apps/$appId" + path
+    s"${config.scheme}://${config.getHost}:${config.getPort}/apps/${config.appId}$path"
   }
 
   /**
@@ -102,19 +102,22 @@ object Request {
    * @return PusherResponse
    */
   def makeRequest(requestParams: RequestParams): PusherResponse = {
-    val auth = generateAuth(requestParams)
-    val initRequest: HttpRequest =
-      Http(endpoint(requestParams.config, requestParams.path))
-        .method(requestParams.verb)
-        .params(auth)
+    val initRequest: HttpRequest = Http(
+      endpoint(requestParams.config, requestParams.path)
+    ).method(
+        requestParams.verb
+      ).params(
+        generateAuth(requestParams)
+      )
 
-    val request: HttpRequest =
-      if (requestParams.verb.equals("POST")) {
-        initRequest.postData(requestParams.body.getOrElse(""))
-          .header("Content-Type", "application/json")
-      } else {
-        initRequest
+    val request: HttpRequest = requestParams.verb match {
+      case "POST" => {
+        initRequest.postData(
+          requestParams.body.getOrElse("")
+        ).header("Content-Type", "application/json")
       }
+      case _ => initRequest
+    }
 
     handleResponse(Try(request.asString))
   }
