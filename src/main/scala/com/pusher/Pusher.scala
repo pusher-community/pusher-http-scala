@@ -1,17 +1,18 @@
 package com.pusher
 
 import com.pusher.RequestValidator.{
-validateChannel,
-validateEventName,
-validateChannelCount,
-validateDataLength
+  validateChannel,
+  validateEventName,
+  validateChannelCount,
+  validateDataLength
 }
 
 import com.pusher.Util.{
-encodeTriggerData,
-encodeJson,
-decodeJson
+  encodeTriggerData,
+  encodeJson,
+  decodeJson
 }
+
 import com.pusher.Types.PusherResponse
 import com.pusher.Signature.{sign, verify}
 
@@ -64,7 +65,6 @@ object Pusher {
   def channelsInfo(pusherConfig: PusherConfig,
                    prefixFilterOpt: Option[String],
                    attributesOpt: Option[List[String]]): PusherResponse = {
-
     val attributeParams: Map[String, String] = attributesOpt.map(
       attributes => Map("info" -> attributes.mkString(","))
     ).getOrElse(Map.empty[String, String])
@@ -97,7 +97,7 @@ object Pusher {
     val params: Map[String, String] =
       if (attributes.isDefined) {
         Map("info" -> attributes.get.mkString(","))
-      } else Map()
+      } else Map.empty[String, String]
 
     Request.makeRequest(
       RequestParams(
@@ -141,7 +141,6 @@ object Pusher {
                    channel: String,
                    socketId: String,
                    customDataOpt: Option[Map[String, String]]): String = {
-
     val stringToSign: String = customDataOpt.map(
       customData => {
         s"$socketId:$channel:${encodeJson(customData)}"
