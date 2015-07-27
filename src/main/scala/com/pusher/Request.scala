@@ -111,11 +111,10 @@ object Request {
       )
 
     val request: HttpRequest = requestParams.verb match {
-      case "POST" => {
+      case "POST" =>
         initRequest.postData(
           requestParams.body.getOrElse("")
         ).header("Content-Type", "application/json")
-      }
       case _ => initRequest
     }
 
@@ -123,26 +122,14 @@ object Request {
   }
 
   /**
-   * Perform validations
-   * @param v Validatable type
-   * @return Option[ValidationError]
-   */
-  private def validate(v: Validator): ValidationResponse = v match {
-    case StringValidator(fn, arg) => fn(arg)
-    case ListValidator(fn, arg) => fn(arg)
-  }
-
-  /**
    * Validate before making requests
    * @param requestParams Parameters for the request
-   * @param validators List of ValidatorFunctions
+   * @param validatorResponses List of ValidatorResponse
    * @return PusherResponse
    */
   def validateAndMakeRequest(requestParams: RequestParams,
-                             validators: List[Validator]): PusherResponse = {
-    val results = validators.map { v =>
-      validate(v)
-    }.flatMap(x => x)
+                             validatorResponses: List[ValidationResponse]): PusherResponse = {
+    val results = validatorResponses.flatMap(x => x)
 
     if (results.nonEmpty) {
       Left(results.head)

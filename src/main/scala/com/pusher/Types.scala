@@ -1,7 +1,5 @@
 package com.pusher
 
-import com.pusher.Types.{StringValidatorFunction, ListValidatorFunction}
-
 /**
  * Custom types
  */
@@ -10,14 +8,7 @@ object Types {
 
   type ValidationResponse = Option[ValidationError]
 
-  type StringValidatorFunction = (String) => ValidationResponse
-
-  type ListValidatorFunction = (List[String]) => ValidationResponse
 }
-
-sealed abstract class Validator
-case class StringValidator(fn: StringValidatorFunction, arg: String) extends Validator
-case class ListValidator(fn: ListValidatorFunction, arg: List[String]) extends Validator
 
 /**
  * Custom type for Trigger data

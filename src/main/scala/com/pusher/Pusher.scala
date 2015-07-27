@@ -37,10 +37,10 @@ object Pusher {
               socketId: Option[String] = None): PusherResponse = {
     val triggerData: TriggerData = TriggerData(channels, eventName, data, socketId)
 
-    val validators = List(
-      StringValidator(validateEventName, eventName),
-      StringValidator(validateDataLength, data),
-      ListValidator(validateChannelCount, channels)
+    val validationResults = List(
+      validateEventName(eventName),
+      validateDataLength(data),
+      validateChannelCount(channels)
     )
 
     Request.validateAndMakeRequest(
@@ -51,7 +51,7 @@ object Pusher {
         None,
         Some(encodeTriggerData(triggerData))
       ),
-      validators
+      validationResults
     )
   }
 
@@ -125,7 +125,7 @@ object Pusher {
         None,
         None
       ),
-      List(StringValidator(validateChannel, channel))
+      List(validateChannel(channel))
     )
   }
 
