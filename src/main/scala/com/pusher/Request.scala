@@ -85,11 +85,7 @@ object Request {
         val responseBody: String = resp.body
 
         resp.code match {
-          case 200 =>
-            parseResponse[T](responseBody) match {
-              case Some(parsedValue) => Right(parsedValue)
-              case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
-            }
+          case 200 => parseResponse(responseBody)
           case 400 => Left(PusherBadRequestError(responseBody))
           case 401 => Left(PusherBadAuthError(responseBody))
           case 403 => Left(PusherForbiddenError(responseBody))
@@ -105,8 +101,11 @@ object Request {
    * @tparam T Type of the case class
    * @return T
    */
-  private def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): Option[T] = {
-    parse(responseBody).extractOpt[T]
+  private def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
+    parse(responseBody).extractOpt[T] match {
+      case Some(parsedValue) => Right(parsedValue)
+      case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
+    }
   }
 
   /**
