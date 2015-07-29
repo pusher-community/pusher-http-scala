@@ -4,11 +4,22 @@ package com.pusher
  * Custom types
  */
 object Types {
-  type PusherResponse = Either[PusherError, Map[String, Any]]
+  type PusherResponse[T] = Either[PusherError, T]
 
   type ValidationResponse = Option[ValidationError]
-
 }
+
+class PusherBaseResponse
+case class TriggerResponse() extends PusherBaseResponse
+case class ChannelDetails(name: String, userCount: Option[Int])
+case class ChannelsInfoResponse(channel: ChannelDetails) extends PusherBaseResponse
+case class ChannelInfoResponse(occupied: Boolean,
+                               userCount: Option[Int],
+                               subscriptionCount: Option[Int]) extends PusherBaseResponse
+case class UserDetails(id: String)
+case class UsersInfoResponse(users: List[UserDetails]) extends PusherBaseResponse
+case class WebhookResponse(data: Map[String, Any]) extends PusherBaseResponse
+
 
 /**
  * Custom type for Trigger data

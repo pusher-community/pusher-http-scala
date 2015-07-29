@@ -34,7 +34,7 @@ object Pusher {
               channels: List[String],
               eventName: String,
               data: String,
-              socketId: Option[String] = None): PusherResponse = {
+              socketId: Option[String] = None): PusherResponse[TriggerResponse] = {
     val triggerData: TriggerData = TriggerData(channels, eventName, data, socketId)
 
     val validationResults = List(
@@ -64,7 +64,7 @@ object Pusher {
    */
   def channelsInfo(pusherConfig: PusherConfig,
                    prefixFilterOpt: Option[String],
-                   attributesOpt: Option[List[String]]): PusherResponse = {
+                   attributesOpt: Option[List[String]]): PusherResponse[ChannelsInfoResponse] = {
     val attributeParams: Map[String, String] = attributesOpt.map(
       attributes => Map("info" -> attributes.mkString(","))
     ).getOrElse(Map.empty[String, String])
@@ -93,7 +93,7 @@ object Pusher {
    */
   def channelInfo(pusherConfig: PusherConfig,
                   channel: String,
-                  attributes: Option[List[String]]): PusherResponse = {
+                  attributes: Option[List[String]]): PusherResponse[ChannelInfoResponse] = {
     val params: Map[String, String] =
       if (attributes.isDefined) {
         Map("info" -> attributes.get.mkString(","))
@@ -116,7 +116,7 @@ object Pusher {
    * @param channel Name of channel
    * @return PusherResponse
    */
-  def usersInfo(pusherConfig: PusherConfig, channel: String): PusherResponse = {
+  def usersInfo(pusherConfig: PusherConfig, channel: String): PusherResponse[UsersInfoResponse] = {
     Request.validateAndMakeRequest(
       RequestParams(
         pusherConfig,
@@ -169,7 +169,7 @@ object Pusher {
   def validateWebhook(pusherConfig: PusherConfig,
                       key: String,
                       signature: String,
-                      body: String): PusherResponse = {
+                      body: String): PusherResponse[WebhookResponse] = {
     if (key != pusherConfig.key) return Left(WebhookError("Key's did not match when verifying webhook"))
 
     if (!verify(pusherConfig.secret, body, signature)) return Left(WebhookError("Signatures do not match"))
@@ -188,6 +188,6 @@ object Pusher {
       case None => return Left(WebhookError("No timestamp supplied with Webhook"))
     }
 
-    Right(bodyData)
+    Right(WebhookResponse(bodyData))
   }
 }

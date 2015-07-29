@@ -41,7 +41,7 @@ object Request {
 
     val authString: String = List(
       requestParams.verb,
-      new URI(endpoint(requestParams.config, requestParams.path)).getPath,
+      new URI(generateEndpoint(requestParams.config, requestParams.path)).getPath,
       generateQueryString(authParams)
     ).mkString("\n")
 
@@ -64,16 +64,18 @@ object Request {
    * @param config The PusherConfig object
    * @return String
    */
-  private def endpoint(config: PusherConfig, path: String): String = {
+  private def generateEndpoint(config: PusherConfig, path: String): String = {
     s"${config.scheme}://${config.getHost}:${config.getPort}/apps/${config.appId}$path"
   }
 
   /**
    * Handle HTTP responses
    * @param response The HTTP response object
+   * @tparam T Type of the case class
    * @return PusherResponse
    */
-  private def handleResponse(response: Try[HttpResponse[String]]): PusherResponse = {
+  private def handleResponse[T <: PusherBaseResponse : Manifest]
+                            (response: Try[HttpResponse[String]]): PusherResponse[T] = {
     val httpResponse: Either[PusherRequestFailedError, HttpResponse[String]] =
       if (response.isSuccess) {
         Right(response.get)
@@ -86,7 +88,7 @@ object Request {
         val responseBody: String = resp.body
 
         resp.code match {
-          case 200 => Right(parse(responseBody).extract[Map[String, Any]])
+          case 200 => Right(parseResponse[T](responseBody))
           case 400 => Left(PusherBadRequestError(responseBody))
           case 401 => Left(PusherBadAuthError(responseBody))
           case 403 => Left(PusherForbiddenError(responseBody))
@@ -97,13 +99,26 @@ object Request {
   }
 
   /**
+   * Parse responses and extract them into case classes
+   * @param responseBody The response string to parse
+   * @tparam T Type of the case class
+   * @return T
+   */
+  private def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): T = {
+    parse(responseBody).extract[T]
+  }
+
+  /**
    * Make a new HTTP request
    * Generate all auth that is required to be sent
+   * @param requestParams Params to make a request with
+   * @tparam T Type of the case class
    * @return PusherResponse
    */
-  def makeRequest(requestParams: RequestParams): PusherResponse = {
+  def makeRequest[T <: PusherBaseResponse : Manifest]
+                 (requestParams: RequestParams): PusherResponse[T] = {
     val initRequest: HttpRequest = Http(
-      endpoint(requestParams.config, requestParams.path)
+      generateEndpoint(requestParams.config, requestParams.path)
     ).method(
         requestParams.verb
       ).params(
@@ -118,23 +133,25 @@ object Request {
       case _ => initRequest
     }
 
-    handleResponse(Try(request.asString))
+    handleResponse[T](Try(request.asString))
   }
 
   /**
    * Validate before making requests
    * @param requestParams Parameters for the request
    * @param validatorResponses List of ValidatorResponse
+   * @tparam T Type of the case class
    * @return PusherResponse
    */
-  def validateAndMakeRequest(requestParams: RequestParams,
-                             validatorResponses: List[ValidationResponse]): PusherResponse = {
+  def validateAndMakeRequest[T <: PusherBaseResponse : Manifest]
+                            (requestParams: RequestParams,
+                             validatorResponses: List[ValidationResponse]): PusherResponse[T] = {
     val results = validatorResponses.flatMap(x => x)
 
     if (results.nonEmpty) {
       Left(results.head)
     } else {
-      makeRequest(requestParams)
+      makeRequest[T](requestParams)
     }
   }
 }
