@@ -21,16 +21,13 @@ object Request {
    * @return Map[String, String]
    */
   private def generateAuth(requestParams: RequestParams): Map[String, String] = {
-    val params = requestParams.params
     val initialParams: Map[String, String] = Map(
       "auth_key" -> requestParams.config.key,
       "auth_version" -> "1.0",
       "auth_timestamp" -> (System.currentTimeMillis / 1000).toString
     )
 
-    val optionalParams: Map[String, String] = params.getOrElse(
-      Map.empty[String, String]
-    )
+    val optionalParams: Map[String, String] = requestParams.params.getOrElse(Map.empty[String, String])
 
     val bodyParams: Map[String, String] = (requestParams.verb, requestParams.body) match {
       case ("POST", Some(body)) => Map("body_md5" -> generateMD5Hash(body))

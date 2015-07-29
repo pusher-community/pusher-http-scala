@@ -9,17 +9,61 @@ object Types {
   type ValidationResponse = Option[ValidationError]
 }
 
+/**
+ * The base class all Response classes inherit from
+ */
 class PusherBaseResponse
+
+/**
+ * Case class for deserializing calls to `trigger`
+ */
 case class TriggerResponse() extends PusherBaseResponse
-case class ChannelDetails(name: String, userCount: Option[Int])
-case class ChannelsInfoResponse(channel: ChannelDetails) extends PusherBaseResponse
+
+/**
+ * User count for channels
+ * @param count Number of users in the channel
+ */
+case class UserCount(count: Int)
+
+/**
+ * ChannelDetails for use in `ChannelsInfoResponse`
+ * @param name Name of the channel
+ */
+case class ChannelDetails(name: Option[UserCount])
+
+/**
+ * Contains information about channels
+ * @param channels Channels mapped to ChannelDetails
+ */
+case class ChannelsInfoResponse(channels: ChannelDetails) extends PusherBaseResponse
+
+/**
+ * Information for one channel
+ * @param occupied Indicates if the channel is occupied or not
+ * @param userCount Number of users in the channel
+ * @param subscriptionCount Number of subscriptions to the channel
+ */
 case class ChannelInfoResponse(occupied: Boolean,
                                userCount: Option[Int],
                                subscriptionCount: Option[Int]) extends PusherBaseResponse
-case class UserDetails(id: String)
-case class UsersInfoResponse(users: List[UserDetails]) extends PusherBaseResponse
-case class WebhookResponse(data: Map[String, Any]) extends PusherBaseResponse
 
+/**
+ * User details for use in `UsersInfoResponse`
+ * @param id Id of the user
+ */
+case class UserDetails(id: String)
+
+/**
+ * Users in a channel
+ * @param users List of `UserDetails`
+ */
+case class UsersInfoResponse(users: List[UserDetails]) extends PusherBaseResponse
+
+/**
+ * Contains webhook body data
+ * @param data Webhook body
+ */
+case class WebhookResponse(data: Map[String, Any]) extends PusherBaseResponse
 
 /**
  * Custom type for Trigger data

@@ -142,9 +142,7 @@ object Pusher {
                    socketId: String,
                    customDataOpt: Option[Map[String, String]]): String = {
     val stringToSign: String = customDataOpt.map(
-      customData => {
-        s"$socketId:$channel:${encodeJson(customData)}"
-      }
+      customData => s"$socketId:$channel:${encodeJson(customData)}"
     ).getOrElse(s"$socketId:$channel")
 
     val signature: String = sign(pusherConfig.secret, stringToSign)
