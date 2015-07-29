@@ -32,7 +32,7 @@ case class PusherForbiddenError(message: String) extends PusherError
 case class PusherBadStatusError(message: String) extends PusherError
 
 /**
- * Error if am HTTP request to Pusher fails
+ * Error if an HTTP request to Pusher fails
  * @param message Message for the error
  */
 case class PusherRequestFailedError(message: String) extends PusherError
@@ -48,4 +48,10 @@ case class ValidationError(message: String) extends PusherError
  * @param message Error message
  */
 case class WebhookError(message: String) extends PusherError
+
+/**
+ * Error for JSON parsing failures
+ * @param message Error message
+ */
+case class JSONParsingError(message: String) extends PusherError
 
