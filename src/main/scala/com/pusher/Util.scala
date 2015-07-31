@@ -21,15 +21,6 @@ object Util {
   }
 
   /**
-   * Decode a JSON string into a Map
-   * @param data String to be decoded
-   * @return Map[String, Any]
-   */
-  def decodeJson(data: String): Map[String, Any] = {
-    read(data)
-  }
-
-  /**
    * Encode TriggerData into JSON
    * @param triggerData Data to be encoded
    * @return String

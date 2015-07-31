@@ -101,7 +101,7 @@ object Request {
    * @tparam T Type of the case class
    * @return T
    */
-  private def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
+   def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
     parse(responseBody).extractOpt[T] match {
       case Some(parsedValue) => Right(parsedValue)
       case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))

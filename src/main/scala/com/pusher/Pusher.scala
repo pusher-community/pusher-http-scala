@@ -9,8 +9,7 @@ import com.pusher.RequestValidator.{
 
 import com.pusher.Util.{
   encodeTriggerData,
-  encodeJson,
-  decodeJson
+  encodeJson
 }
 
 import com.pusher.Types.PusherResponse
@@ -170,22 +169,19 @@ object Pusher {
                       body: String): PusherResponse[WebhookResponse] = {
     if (key != pusherConfig.key) return Left(WebhookError("Key's did not match when verifying webhook"))
 
-    if (!verify(pusherConfig.secret, body, signature)) return Left(WebhookError("Signatures do not match"))
-
-    val bodyData = decodeJson(body)
-    val timeMs = bodyData.get("time_ms")
-
-    if (timeMs.isEmpty) return Left(WebhookError("No timestamp supplied with Webhook"))
-
-    timeMs match {
-      case Some(time: Int) =>
-        if ((System.currentTimeMillis / 1000 - time) > 300000) {
-          return Left(WebhookError("Webhook time not within 300 seconds"))
-        }
-      case Some(time: Any) => return Left(WebhookError("Invalid time format"))
-      case None => return Left(WebhookError("No timestamp supplied with Webhook"))
+    if (!verify(pusherConfig.secret, body, signature)) {
+      return Left(WebhookError("Received webhook with invalid signature"))
     }
 
-    Right(WebhookResponse(bodyData))
+    val bodyData = Request.parseResponse[WebhookResponse](body)
+    bodyData match {
+      case Right(data) =>
+        if ((System.currentTimeMillis / 1000 - data.timeMs) > 300000) {
+          return Left(WebhookError("Webhook time not within 300 seconds"))
+        }
+
+        Right(data)
+      case Left(error) => Left(error)
+    }
   }
 }
