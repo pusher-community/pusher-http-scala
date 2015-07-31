@@ -4,11 +4,103 @@ package com.pusher
  * Custom types
  */
 object Types {
-  type PusherResponse = Either[PusherError, Map[String, Any]]
+  type PusherResponse[T] = Either[PusherError, T]
 
   type ValidationResponse = Option[ValidationError]
-
 }
+
+/**
+ * The base class all Response classes inherit from
+ */
+class PusherBaseResponse
+
+/**
+ * Case class for deserializing calls to `trigger`
+ */
+case class TriggerResponse() extends PusherBaseResponse
+
+/**
+ * User count for channels
+ * @param count Number of users in the channel
+ */
+case class UserCount(count: Int)
+
+/**
+ * ChannelDetails for use in `ChannelsInfoResponse`
+ * @param name Name of the channel
+ */
+case class ChannelDetails(name: Option[UserCount])
+
+/**
+ * Contains information about channels
+ * @param channels Channels mapped to ChannelDetails
+ */
+case class ChannelsInfoResponse(channels: ChannelDetails) extends PusherBaseResponse
+
+/**
+ * Information for one channel
+ * @param occupied Indicates if the channel is occupied or not
+ * @param userCount Number of users in the channel
+ * @param subscriptionCount Number of subscriptions to the channel
+ */
+case class ChannelInfoResponse(occupied: Boolean,
+                               userCount: Option[Int],
+                               subscriptionCount: Option[Int]) extends PusherBaseResponse
+
+/**
+ * User details for use in `UsersInfoResponse`
+ * @param id Id of the user
+ */
+case class UserDetails(id: String)
+
+/**
+ * Users in a channel
+ * @param users List of `UserDetails`
+ */
+case class UsersInfoResponse(users: List[UserDetails]) extends PusherBaseResponse
+
+/**
+ * Class from which all webhook events inherit
+ */
+class WebhookEvents
+
+/**
+ * Contains webhook body data
+ * @param timeMs Webhook time
+ * @param events List of events
+ */
+case class WebhookResponse(timeMs: Long, events: List[WebhookEvents]) extends PusherBaseResponse
+
+/**
+ * Webhook channel existence data
+ * @param name Name of event
+ * @param channel Name of channel
+ */
+case class WebhookChannelExistenceEvent(name: String, channel: String) extends WebhookEvents
+
+/**
+ * Webhook presence data
+ * @param name Name of event
+ * @param channel Name of channel
+ * @param userId User ID of the subscribed user
+ */
+case class WebhookPresenceEvent(name: String, channel: String, userId: String) extends WebhookEvents
+
+/**
+ * Client event data
+ * @param name Name of event
+ * @param channel Name of channel
+ * @param event Name of event
+ * @param data Data sent with the client event
+ * @param socketId Socket ID of the sending socket
+ * @param userId Optional user id for presence channels
+ */
+case class WebhookClientEvent(name: String,
+                              channel: String,
+                              event: String,
+                              data: String,
+                              socketId: String,
+                              userId: Option[String])
 
 /**
  * Custom type for Trigger data

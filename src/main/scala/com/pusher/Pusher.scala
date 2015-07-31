@@ -9,8 +9,7 @@ import com.pusher.RequestValidator.{
 
 import com.pusher.Util.{
   encodeTriggerData,
-  encodeJson,
-  decodeJson
+  encodeJson
 }
 
 import com.pusher.Types.PusherResponse
@@ -34,7 +33,7 @@ object Pusher {
               channels: List[String],
               eventName: String,
               data: String,
-              socketId: Option[String] = None): PusherResponse = {
+              socketId: Option[String] = None): PusherResponse[TriggerResponse] = {
     val triggerData: TriggerData = TriggerData(channels, eventName, data, socketId)
 
     val validationResults = List(
@@ -64,7 +63,7 @@ object Pusher {
    */
   def channelsInfo(pusherConfig: PusherConfig,
                    prefixFilterOpt: Option[String],
-                   attributesOpt: Option[List[String]]): PusherResponse = {
+                   attributesOpt: Option[List[String]]): PusherResponse[ChannelsInfoResponse] = {
     val attributeParams: Map[String, String] = attributesOpt.map(
       attributes => Map("info" -> attributes.mkString(","))
     ).getOrElse(Map.empty[String, String])
@@ -93,7 +92,7 @@ object Pusher {
    */
   def channelInfo(pusherConfig: PusherConfig,
                   channel: String,
-                  attributes: Option[List[String]]): PusherResponse = {
+                  attributes: Option[List[String]]): PusherResponse[ChannelInfoResponse] = {
     val params: Map[String, String] =
       if (attributes.isDefined) {
         Map("info" -> attributes.get.mkString(","))
@@ -116,7 +115,7 @@ object Pusher {
    * @param channel Name of channel
    * @return PusherResponse
    */
-  def usersInfo(pusherConfig: PusherConfig, channel: String): PusherResponse = {
+  def usersInfo(pusherConfig: PusherConfig, channel: String): PusherResponse[UsersInfoResponse] = {
     Request.validateAndMakeRequest(
       RequestParams(
         pusherConfig,
@@ -142,9 +141,7 @@ object Pusher {
                    socketId: String,
                    customDataOpt: Option[Map[String, String]]): String = {
     val stringToSign: String = customDataOpt.map(
-      customData => {
-        s"$socketId:$channel:${encodeJson(customData)}"
-      }
+      customData => s"$socketId:$channel:${encodeJson(customData)}"
     ).getOrElse(s"$socketId:$channel")
 
     val signature: String = sign(pusherConfig.secret, stringToSign)
@@ -169,25 +166,22 @@ object Pusher {
   def validateWebhook(pusherConfig: PusherConfig,
                       key: String,
                       signature: String,
-                      body: String): PusherResponse = {
+                      body: String): PusherResponse[WebhookResponse] = {
     if (key != pusherConfig.key) return Left(WebhookError("Key's did not match when verifying webhook"))
 
-    if (!verify(pusherConfig.secret, body, signature)) return Left(WebhookError("Signatures do not match"))
-
-    val bodyData = decodeJson(body)
-    val timeMs = bodyData.get("time_ms")
-
-    if (timeMs.isEmpty) return Left(WebhookError("No timestamp supplied with Webhook"))
-
-    timeMs match {
-      case Some(time: Int) =>
-        if ((System.currentTimeMillis / 1000 - time) > 300000) {
-          return Left(WebhookError("Webhook time not within 300 seconds"))
-        }
-      case Some(time: Any) => return Left(WebhookError("Invalid time format"))
-      case None => return Left(WebhookError("No timestamp supplied with Webhook"))
+    if (!verify(pusherConfig.secret, body, signature)) {
+      return Left(WebhookError("Received webhook with invalid signature"))
     }
 
-    Right(bodyData)
+    val bodyData = Request.parseResponse[WebhookResponse](body)
+    bodyData match {
+      case Right(data) =>
+        if ((System.currentTimeMillis / 1000 - data.timeMs) > 300000) {
+          return Left(WebhookError("Webhook time not within 300 seconds"))
+        }
+
+        Right(data)
+      case Left(error) => Left(error)
+    }
   }
 }
