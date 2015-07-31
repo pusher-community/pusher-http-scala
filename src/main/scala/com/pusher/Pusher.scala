@@ -7,10 +7,7 @@ import com.pusher.RequestValidator.{
   validateDataLength
 }
 
-import com.pusher.Util.{
-  encodeTriggerData,
-  encodeJson
-}
+import com.pusher.Util.{encodeTriggerData, encodeJson}
 
 import com.pusher.Types.PusherResponse
 import com.pusher.Signature.{sign, verify}

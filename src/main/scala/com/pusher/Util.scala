@@ -5,7 +5,7 @@ import java.security.MessageDigest
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
 
-import org.json4s.native.Serialization.{write, read}
+import org.json4s.native.Serialization.write
 
 object Util {
 
