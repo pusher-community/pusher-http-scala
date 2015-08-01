@@ -36,7 +36,8 @@ object Pusher {
     val validationResults = List(
       validateEventName(eventName),
       validateDataLength(data),
-      validateChannelCount(channels)
+      validateChannelCount(channels),
+      channels.map(c => validateChannel(c)).head
     )
 
     Request.validateAndMakeRequest(
