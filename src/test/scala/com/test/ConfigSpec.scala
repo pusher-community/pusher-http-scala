@@ -1,6 +1,6 @@
 package com.test
 
-import com.pusher.{PusherConfig, Pusher}
+import com.pusher.PusherConfig
 import org.scalatest._
 
 class ConfigSpec extends FunSpec {
