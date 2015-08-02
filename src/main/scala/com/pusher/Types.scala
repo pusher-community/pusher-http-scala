@@ -40,12 +40,12 @@ case class ChannelsInfoResponse(channels: ChannelDetails) extends PusherBaseResp
 /**
  * Information for one channel
  * @param occupied Indicates if the channel is occupied or not
- * @param userCount Number of users in the channel
- * @param subscriptionCount Number of subscriptions to the channel
+ * @param user_count Number of users in the channel
+ * @param subscription_count Number of subscriptions to the channel
  */
 case class ChannelInfoResponse(occupied: Boolean,
-                               userCount: Option[Int],
-                               subscriptionCount: Option[Int]) extends PusherBaseResponse
+                               user_count: Option[Int],
+                               subscription_count: Option[Int]) extends PusherBaseResponse
 
 /**
  * User details for use in `UsersInfoResponse`
