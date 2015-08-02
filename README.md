@@ -1,4 +1,5 @@
 # pusher-http-scala
+[![Build Status](https://travis-ci.org/vivangkumar/pusher-http-scala.svg?branch=master)](https://travis-ci.org/vivangkumar/pusher-http-scala)
 
 A scala library to interact with the Pusher HTTP API.
 
