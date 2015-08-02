@@ -5,7 +5,7 @@ import com.pusher.Types.{ValidationResponse, PusherResponse}
 import com.pusher.Util.generateMD5Hash
 
 import java.net.URI
-import org.json4s.native.JsonMethods.parse
+import org.json4s.native.JsonMethods.parseOpt
 import org.json4s.DefaultFormats
 import scala.util.Try
 import scalaj.http.{Http, HttpRequest, HttpResponse}
@@ -102,8 +102,8 @@ object Request {
    * @return T
    */
    def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
-    parse(responseBody).extractOpt[T] match {
-      case Some(parsedValue) => Right(parsedValue)
+    parseOpt(responseBody) match {
+      case Some(parsedValue) => Right(parsedValue.extract[T])
       case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
     }
   }
