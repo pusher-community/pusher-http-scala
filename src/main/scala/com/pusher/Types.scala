@@ -20,22 +20,16 @@ class PusherBaseResponse
 case class TriggerResponse() extends PusherBaseResponse
 
 /**
- * User count for channels
- * @param count Number of users in the channel
+ * Channel details
+ * @param user_count Number of users in the channel
  */
-case class UserCount(count: Int)
-
-/**
- * ChannelDetails for use in `ChannelsInfoResponse`
- * @param name Name of the channel
- */
-case class ChannelDetails(name: Option[UserCount])
+case class ChannelDetails(user_count: Option[Int])
 
 /**
  * Contains information about channels
  * @param channels Channels mapped to ChannelDetails
  */
-case class ChannelsInfoResponse(channels: ChannelDetails) extends PusherBaseResponse
+case class ChannelsInfoResponse(channels: Map[String, ChannelDetails]) extends PusherBaseResponse
 
 /**
  * Information for one channel
