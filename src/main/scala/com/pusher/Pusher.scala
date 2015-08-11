@@ -26,11 +26,11 @@ object Pusher {
    * @param socketId Socked ID to exclude
    * @return PusherResponse
    */
-  def trigger(pusherConfig: PusherConfig,
-              channels: List[String],
+  def trigger(channels: List[String],
               eventName: String,
               data: String,
-              socketId: Option[String] = None): PusherResponse[TriggerResponse] = {
+              socketId: Option[String] = None)
+             (implicit pusherConfig: PusherConfig): PusherResponse[TriggerResponse] = {
     val triggerData: TriggerData = TriggerData(channels, eventName, data, socketId)
 
     val validationResults = List(
@@ -59,9 +59,9 @@ object Pusher {
    * @param attributesOpt Attributes to be returned for each channel
    * @return PusherResponse
    */
-  def channelsInfo(pusherConfig: PusherConfig,
-                   prefixFilterOpt: Option[String],
-                   attributesOpt: Option[List[String]]): PusherResponse[ChannelsInfoResponse] = {
+  def channelsInfo(prefixFilterOpt: Option[String],
+                   attributesOpt: Option[List[String]])
+                  (implicit pusherConfig: PusherConfig): PusherResponse[ChannelsInfoResponse] = {
     val attributeParams: Map[String, String] = attributesOpt.map(
       attributes => Map("info" -> attributes.mkString(","))
     ).getOrElse(Map.empty[String, String])
@@ -88,9 +88,9 @@ object Pusher {
    * @param attributes Attributes requested
    * @return PusherResponse
    */
-  def channelInfo(pusherConfig: PusherConfig,
-                  channel: String,
-                  attributes: Option[List[String]]): PusherResponse[ChannelInfoResponse] = {
+  def channelInfo(channel: String,
+                  attributes: Option[List[String]])
+                 (implicit pusherConfig: PusherConfig): PusherResponse[ChannelInfoResponse] = {
     val params: Map[String, String] =
       if (attributes.isDefined) {
         Map("info" -> attributes.get.mkString(","))
@@ -113,7 +113,7 @@ object Pusher {
    * @param channel Name of channel
    * @return PusherResponse
    */
-  def usersInfo(pusherConfig: PusherConfig, channel: String): PusherResponse[UsersInfoResponse] = {
+  def usersInfo(channel: String)(implicit pusherConfig: PusherConfig): PusherResponse[UsersInfoResponse] = {
     Request.validateAndMakeRequest(
       RequestParams(
         pusherConfig,
@@ -134,10 +134,10 @@ object Pusher {
    * @param customDataOpt Used on presence channels for info
    * @return String
    */
-  def authenticate(pusherConfig: PusherConfig,
-                   channel: String,
+  def authenticate(channel: String,
                    socketId: String,
-                   customDataOpt: Option[Map[String, String]]): String = {
+                   customDataOpt: Option[Map[String, String]])
+                  (implicit pusherConfig: PusherConfig): String = {
     val stringToSign: String = customDataOpt.map(
       customData => s"$socketId:$channel:${encodeJson(customData)}"
     ).getOrElse(s"$socketId:$channel")
@@ -161,10 +161,10 @@ object Pusher {
    * @param body Body that needs to be verified
    * @return PusherResponse
    */
-  def validateWebhook(pusherConfig: PusherConfig,
-                      key: String,
+  def validateWebhook(key: String,
                       signature: String,
-                      body: String): PusherResponse[WebhookResponse] = {
+                      body: String)
+                     (implicit pusherConfig: PusherConfig): PusherResponse[WebhookResponse] = {
     if (key != pusherConfig.key) return Left(WebhookError("Key's did not match when verifying webhook"))
 
     if (!verify(pusherConfig.secret, body, signature)) {
