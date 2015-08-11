@@ -76,5 +76,69 @@ class RequestSpec extends FunSpec {
     it("should fail if there JSON is invalid") {
       assert(parseResponse[TriggerResponse]("test") == Left(JSONParsingError("Failed to parse JSON: test")))
     }
+
+    it("should deserialise webhook channel existence responses into WebhookResponse") {
+      assert(parseResponse[WebhookResponse]
+        ("{\"time_ms\": 1327078148132,\"events\": [{ \"name\": \"channel_occupied\", " +
+          "\"channel\": \"test_channel\"}]}")
+        ==
+        Right(
+          WebhookResponse(
+            1327078148132L,
+            List(
+              Map(
+                "name" -> "channel_occupied",
+                "channel" -> "test_channel"
+              )
+            )
+          )
+        )
+      )
+    }
+
+    it("should deserialise webhook presence events into WebhookResponse") {
+      assert(parseResponse[WebhookResponse]
+        ("{\"time_ms\": 1327078148132,\"events\": [{\"name\": \"member_added\", " +
+          "\"channel\": \"presence-your_channel_name\", \"user_id\": \"a_user_id\"}]}")
+        ==
+        Right(
+          WebhookResponse(
+            1327078148132L,
+            List(
+              Map(
+                "name" -> "member_added",
+                "channel" -> "presence-your_channel_name",
+                "user_id" -> "a_user_id"
+              )
+            )
+          )
+        )
+      )
+    }
+
+    it("should deserialise webhook client events into WebhookResponse") {
+      assert(parseResponse[WebhookResponse]
+        ("{\"time_ms\": 1327078148132,\"events\": [{\"name\":\"client_event\"," +
+          "\"channel\":\"chan\",\"event\":\"event\"," +
+          "\"data\":\"data\",\"socket_id\":\"socket_id\"," +
+          "\"user_id\":\"user_id\"}]}")
+        ==
+        Right(
+          WebhookResponse(
+            1327078148132L,
+            List(
+              Map(
+                "name" -> "client_event",
+                "channel" -> "chan",
+                "event" -> "event",
+                "data" -> "data",
+                "socket_id" -> "socket_id",
+                "user_id" -> "user_id"
+              )
+            )
+          )
+        )
+      )
+    }
   }
 }

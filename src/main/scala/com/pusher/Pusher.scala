@@ -174,7 +174,7 @@ object Pusher {
     val bodyData = Request.parseResponse[WebhookResponse](body)
     bodyData match {
       case Right(data) =>
-        if ((System.currentTimeMillis / 1000 - data.timeMs) > 300000) {
+        if ((System.currentTimeMillis / 1000 - data.time_ms) > 300000) {
           return Left(WebhookError("Webhook time not within 300 seconds"))
         }
 
