@@ -136,7 +136,7 @@ object Pusher {
    */
   def authenticate(channel: String,
                    socketId: String,
-                   customDataOpt: Option[Map[String, String]])
+                   customDataOpt: Option[Map[String, Any]])
                   (implicit pusherConfig: PusherConfig): String = {
     val stringToSign: String = customDataOpt.map(
       customData => s"$socketId:$channel:${encodeJson(customData)}"
