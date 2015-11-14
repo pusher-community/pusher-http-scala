@@ -28,9 +28,9 @@ object Util {
   def encodeTriggerData(triggerData: TriggerData): String = {
     val json =
       ("channels" -> triggerData.channels) ~
-        ("name" -> triggerData.eventName) ~
-        ("data" -> triggerData.data) ~
-        ("socket_id" -> triggerData.socketId)
+      ("name" -> triggerData.eventName) ~
+      ("data" -> triggerData.data) ~
+      ("socket_id" -> triggerData.socketId)
 
     write(json)
   }

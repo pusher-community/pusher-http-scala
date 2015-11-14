@@ -21,7 +21,7 @@ object RequestValidator {
    * @return Option[ValidationError]
    */
   def validateDataLength(data: String): Option[ValidationError] = {
-    if (data.getBytes.length > 10240) {
+    if (data.length > 10240) {
       Some(ValidationError("Data size is above 10240 bytes"))
     } else None
   }

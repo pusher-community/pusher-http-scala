@@ -20,32 +20,26 @@ class PusherBaseResponse
 case class TriggerResponse() extends PusherBaseResponse
 
 /**
- * User count for channels
- * @param count Number of users in the channel
+ * Channel details
+ * @param user_count Number of users in the channel
  */
-case class UserCount(count: Int)
-
-/**
- * ChannelDetails for use in `ChannelsInfoResponse`
- * @param name Name of the channel
- */
-case class ChannelDetails(name: Option[UserCount])
+case class ChannelDetails(user_count: Option[Int])
 
 /**
  * Contains information about channels
  * @param channels Channels mapped to ChannelDetails
  */
-case class ChannelsInfoResponse(channels: ChannelDetails) extends PusherBaseResponse
+case class ChannelsInfoResponse(channels: Map[String, ChannelDetails]) extends PusherBaseResponse
 
 /**
  * Information for one channel
  * @param occupied Indicates if the channel is occupied or not
- * @param userCount Number of users in the channel
- * @param subscriptionCount Number of subscriptions to the channel
+ * @param user_count Number of users in the channel
+ * @param subscription_count Number of subscriptions to the channel
  */
 case class ChannelInfoResponse(occupied: Boolean,
-                               userCount: Option[Int],
-                               subscriptionCount: Option[Int]) extends PusherBaseResponse
+                               user_count: Option[Int],
+                               subscription_count: Option[Int]) extends PusherBaseResponse
 
 /**
  * User details for use in `UsersInfoResponse`
@@ -62,45 +56,14 @@ case class UsersInfoResponse(users: List[UserDetails]) extends PusherBaseRespons
 /**
  * Class from which all webhook events inherit
  */
-class WebhookEvents
+class WebhookEvent
 
 /**
  * Contains webhook body data
- * @param timeMs Webhook time
+ * @param time_ms Webhook time
  * @param events List of events
  */
-case class WebhookResponse(timeMs: Long, events: List[WebhookEvents]) extends PusherBaseResponse
-
-/**
- * Webhook channel existence data
- * @param name Name of event
- * @param channel Name of channel
- */
-case class WebhookChannelExistenceEvent(name: String, channel: String) extends WebhookEvents
-
-/**
- * Webhook presence data
- * @param name Name of event
- * @param channel Name of channel
- * @param userId User ID of the subscribed user
- */
-case class WebhookPresenceEvent(name: String, channel: String, userId: String) extends WebhookEvents
-
-/**
- * Client event data
- * @param name Name of event
- * @param channel Name of channel
- * @param event Name of event
- * @param data Data sent with the client event
- * @param socketId Socket ID of the sending socket
- * @param userId Optional user id for presence channels
- */
-case class WebhookClientEvent(name: String,
-                              channel: String,
-                              event: String,
-                              data: String,
-                              socketId: String,
-                              userId: Option[String])
+case class WebhookResponse(time_ms: Long, events: List[Map[String, String]]) extends PusherBaseResponse
 
 /**
  * Custom type for Trigger data
