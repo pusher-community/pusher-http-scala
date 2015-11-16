@@ -15,11 +15,19 @@ import com.pusher.Signature.{sign, verify}
 /**
  * Pusher object
  */
-object Pusher {
+class Pusher(private val appId: String,
+             private val key: String,
+             private val secret: String,
+             private val ssl: Boolean = true,
+             private val cluster: Option[String] = None,
+             private val port: Option[Int] = None,
+             private val host: Option[String] = None) {
+
+  private val pusherConfig: PusherConfig = PusherConfig(appId, key, secret, ssl, cluster, port, host)
+
 
   /**
    * Trigger an event
-   * @param pusherConfig Pusher config details
    * @param channels Channels to trigger the event on
    * @param eventName Name of the event
    * @param data Data to send
@@ -29,8 +37,7 @@ object Pusher {
   def trigger(channels: List[String],
               eventName: String,
               data: String,
-              socketId: Option[String] = None)
-             (implicit pusherConfig: PusherConfig): PusherResponse[TriggerResponse] = {
+              socketId: Option[String] = None): PusherResponse[TriggerResponse] = {
     val triggerData: TriggerData = TriggerData(channels, eventName, data, socketId)
 
     val validationResults = List(
@@ -54,14 +61,12 @@ object Pusher {
 
   /**
    * Get information for multiple channels
-   * @param pusherConfig Pusher config details
    * @param prefixFilterOpt Prefix to filter channels with
    * @param attributesOpt Attributes to be returned for each channel
    * @return PusherResponse
    */
   def channelsInfo(prefixFilterOpt: Option[String],
-                   attributesOpt: Option[List[String]])
-                  (implicit pusherConfig: PusherConfig): PusherResponse[ChannelsInfoResponse] = {
+                   attributesOpt: Option[List[String]]): PusherResponse[ChannelsInfoResponse] = {
     val attributeParams: Map[String, String] = attributesOpt.map(
       attributes => Map("info" -> attributes.mkString(","))
     ).getOrElse(Map.empty[String, String])
@@ -83,14 +88,12 @@ object Pusher {
 
   /**
    * Get info for one channel
-   * @param pusherConfig Pusher config details
    * @param channel Name of channel
    * @param attributes Attributes requested
    * @return PusherResponse
    */
   def channelInfo(channel: String,
-                  attributes: Option[List[String]])
-                 (implicit pusherConfig: PusherConfig): PusherResponse[ChannelInfoResponse] = {
+                  attributes: Option[List[String]]): PusherResponse[ChannelInfoResponse] = {
     val params: Map[String, String] =
       if (attributes.isDefined) {
         Map("info" -> attributes.get.mkString(","))
@@ -109,11 +112,10 @@ object Pusher {
 
   /**
    * Fetch user id's subscribed to a channel
-   * @param pusherConfig Pusher config details
    * @param channel Name of channel
    * @return PusherResponse
    */
-  def usersInfo(channel: String)(implicit pusherConfig: PusherConfig): PusherResponse[UsersInfoResponse] = {
+  def usersInfo(channel: String): PusherResponse[UsersInfoResponse] = {
     Request.validateAndMakeRequest(
       RequestParams(
         pusherConfig,
@@ -128,7 +130,6 @@ object Pusher {
 
   /**
    * Generate a delegated client subscription token
-   * @param pusherConfig Pusher config details
    * @param channel Channel to authenticate
    * @param socketId SocketId that required auth
    * @param customDataOpt Used on presence channels for info
@@ -136,8 +137,7 @@ object Pusher {
    */
   def authenticate(channel: String,
                    socketId: String,
-                   customDataOpt: Option[Map[String, Any]])
-                  (implicit pusherConfig: PusherConfig): String = {
+                   customDataOpt: Option[Map[String, Any]]): String = {
     val stringToSign: String = customDataOpt.map(
       customData => s"$socketId:$channel:${encodeJson(customData)}"
     ).getOrElse(s"$socketId:$channel")
@@ -155,7 +155,6 @@ object Pusher {
 
   /**
    * Validate webhook messages
-   * @param pusherConfig Pusher config details
    * @param key Key used to sign the body
    * @param signature Signature given with the body
    * @param body Body that needs to be verified
@@ -163,8 +162,7 @@ object Pusher {
    */
   def validateWebhook(key: String,
                       signature: String,
-                      body: String)
-                     (implicit pusherConfig: PusherConfig): PusherResponse[WebhookResponse] = {
+                      body: String): PusherResponse[WebhookResponse] = {
     if (key != pusherConfig.key) return Left(WebhookError("Key's did not match when verifying webhook"))
 
     if (!verify(pusherConfig.secret, body, signature)) {
