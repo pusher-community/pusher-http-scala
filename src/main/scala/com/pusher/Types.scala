@@ -54,16 +54,34 @@ case class UserDetails(id: String)
 case class UsersInfoResponse(users: List[UserDetails]) extends PusherBaseResponse
 
 /**
- * Class from which all webhook events inherit
+ * Represents a webhook event
+ * @param name Name of the event
+ * @param channel Name of the channel the event occured on
+ * @param event Event that occurred
+ * @param data Data associated with the event
+ * @param socket_id Socket id of the sending socket
+ * @param user_id User id of the member incase of a presence event
  */
-class WebhookEvent
+case class WebhookEvent(name: String,
+                        channel: String,
+                        event: Option[String],
+                        data: Option[String],
+                        socket_id: Option[String],
+                        user_id: Option[String])
 
 /**
  * Contains webhook body data
  * @param time_ms Webhook time
- * @param events List of events
+ * @param events List of WebhookEvent
  */
-case class WebhookResponse(time_ms: Long, events: List[Map[String, String]]) extends PusherBaseResponse
+case class WebhookResponse(time_ms: Long, events: List[WebhookEvent]) extends PusherBaseResponse
+
+/**
+ * User data to be passed when authenticating presence users
+ * @param userId User id of the authenticated user
+ * @param userInfo Extra information to be passed as a Map
+ */
+case class PresenceUser(userId: String, userInfo: Map[String, String])
 
 /**
  * Custom type for Trigger data

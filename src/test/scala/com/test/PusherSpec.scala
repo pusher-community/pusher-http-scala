@@ -2,16 +2,11 @@ package com.test
 
 import com.pusher._
 import org.scalatest.FunSpec
-import org.specs2.mock.Mockito
 
-import scalaj.http.HttpRequest
-
-class PusherSpec extends FunSpec with Mockito {
+class PusherSpec extends FunSpec {
   val key = "somekey"
   val secret = "somesecret"
   val pusher = new Pusher("4", key, secret)
-  val mockPusher = spy(new Pusher("4", key, secret))
-  val mockHttpRequest = mock[HttpRequest]
 
   describe("#authenticate") {
     it("should authenticate private channels") {
@@ -24,25 +19,24 @@ class PusherSpec extends FunSpec with Mockito {
       val auth = pusher.authenticate(
         "presence-channel",
         "12356.342",
-        Some(Map("user_id" -> 123, "user_info" -> Map("key" -> "value")))
+        Some(PresenceUser("123", Map("key" -> "value")))
       )
       assert(
         auth
         ==
-        "{\"auth\":\"somekey:d94ac8df09a2c2de1d9c53100194a73ec1e8d96bb2cf37d99e5910c7c89a0056\"," +
-          "\"channel_data\":\"{\\\"user_id\\\":123,\\\"user_info\\\":{\\\"key\\\":\\\"value\\\"}}\"}"
+        "{\"auth\":\"somekey:1075d43b7deaa9b1c7ccf6f28cb035d858ca25e27f5c140d9841ee418909ad76\"," +
+          "\"channel_data\":\"{\\\"user_id\\\":\\\"123\\\",\\\"user_info\\\":{\\\"key\\\":\\\"value\\\"}}\"}"
       )
     }
   }
 
   describe("#validateWebhook") {
-    val currentTime = System.currentTimeMillis / 1000
-    val body = Util.encodeJson(Map("time_ms" -> currentTime))
+    val body = "{\"time_ms\": 1327078148132,\"events\": []}"
     val signature = Signature.sign(secret, body)
 
     it("should validate genuine webhooks") {
       val webhookBody = pusher.validateWebhook(key, signature, body)
-      assert(webhookBody == Right(WebhookResponse(currentTime, List())))
+      assert(webhookBody == Right(WebhookResponse(1327078148132L, List())))
     }
 
     it("should return a WebhookError if the key's do not match") {
@@ -60,13 +54,6 @@ class PusherSpec extends FunSpec with Mockito {
       val fakeSignature = Signature.sign(secret, invalidBody)
       val webhookBody = pusher.validateWebhook(key, fakeSignature, invalidBody)
       assert(webhookBody == Left(WebhookError("Webhook time not within 300 seconds")))
-    }
-  }
-
-  describe("trigger") {
-    it("should trigger a new event and return a TriggerResponse object") {
-      val res = mockPusher.trigger(List("mychannekl"), "myevent", "somedate")
-      res equals Right(TriggerResponse())
     }
   }
 }

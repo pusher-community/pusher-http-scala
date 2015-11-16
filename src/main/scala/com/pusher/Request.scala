@@ -1,7 +1,7 @@
 package com.pusher
 
 import com.pusher.Signature.sign
-import com.pusher.Types.{ValidationResponse, PusherResponse}
+import com.pusher.Types.PusherResponse
 import com.pusher.Util.generateMD5Hash
 
 import java.net.URI
@@ -11,16 +11,15 @@ import scala.util.Try
 import scalaj.http.{Http, HttpRequest, HttpResponse}
 
 
-object Request {
+class Request(private val requestParams: RequestParams) {
 
   implicit val formats = DefaultFormats
 
   /**
    * Generate authentication for the request
-   * @param requestParams The request params object
    * @return Map[String, String]
    */
-  private def generateAuth(requestParams: RequestParams): Map[String, String] = {
+  private def generateAuth: Map[String, String] = {
     val initialParams: Map[String, String] = Map(
       "auth_key" -> requestParams.config.key,
       "auth_version" -> "1.0",
@@ -85,7 +84,7 @@ object Request {
         val responseBody: String = resp.body
 
         resp.code match {
-          case 200 => parseResponse(responseBody)
+          case 200 => Request.parseResponse(responseBody)
           case 400 => Left(PusherBadRequestError(responseBody))
           case 401 => Left(PusherBadAuthError(responseBody))
           case 403 => Left(PusherForbiddenError(responseBody))
@@ -96,34 +95,17 @@ object Request {
   }
 
   /**
-   * Parse responses and extract them into case classes
-   * @param responseBody The response string to parse
-   * @tparam T Type of the case class
-   * @return T
-   */
-   def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
-    parseOpt(responseBody) match {
-      case Some(parsedValue) => Right(parsedValue.extract[T])
-      case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
-    }
-  }
-
-  /**
    * Make a new HTTP request
    * Generate all auth that is required to be sent
-   * @param requestParams Params to make a request with
    * @tparam T Type of the case class
    * @return PusherResponse
    */
-  def makeRequest[T <: PusherBaseResponse : Manifest]
-                 (requestParams: RequestParams): PusherResponse[T] = {
+  def makeRequest[T <: PusherBaseResponse : Manifest]: PusherResponse[T] = {
     val initRequest: HttpRequest = Http(
       generateEndpoint(requestParams.config, requestParams.path)
     ).method(
         requestParams.verb
-      ).params(
-        generateAuth(requestParams)
-      )
+      ).params(generateAuth)
 
     val request: HttpRequest = requestParams.verb match {
       case "POST" =>
@@ -135,23 +117,22 @@ object Request {
 
     handleResponse[T](Try(request.asString))
   }
+}
+
+object Request {
+
+  implicit val formats = DefaultFormats
 
   /**
-   * Validate before making requests
-   * @param requestParams Parameters for the request
-   * @param validatorResponses List of ValidatorResponse
+   * Parse responses and extract them into case classes
+   * @param responseBody The response string to parse
    * @tparam T Type of the case class
-   * @return PusherResponse
+   * @return T
    */
-  def validateAndMakeRequest[T <: PusherBaseResponse : Manifest]
-                            (requestParams: RequestParams,
-                             validatorResponses: List[ValidationResponse]): PusherResponse[T] = {
-    val results = validatorResponses.flatMap(x => x)
-
-    if (results.nonEmpty) {
-      Left(results.head)
-    } else {
-      makeRequest[T](requestParams)
+  def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
+    parseOpt(responseBody) match {
+      case Some(parsedValue) => Right(parsedValue.extract[T])
+      case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
     }
   }
 }

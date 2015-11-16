@@ -7,7 +7,7 @@ import com.pusher.RequestValidator.{
   validateDataLength
 }
 
-import com.pusher.Util.{encodeTriggerData, encodeJson}
+import com.pusher.Util.{encodeTriggerData, encodePresenceUser, encodeJson}
 
 import com.pusher.Types.PusherResponse
 import com.pusher.Signature.{sign, verify}
@@ -45,18 +45,20 @@ class Pusher(private val appId: String,
       validateDataLength(data),
       validateChannelCount(channels),
       channels.map(c => validateChannel(c)).head
-    )
+    ).flatMap(x => x)
 
-    Request.validateAndMakeRequest(
+    if (validationResults.nonEmpty) return Left(validationResults.head)
+
+    val request = new Request(
       RequestParams(
         pusherConfig,
         "POST",
         "/events",
         None,
         Some(encodeTriggerData(triggerData))
-      ),
-      validationResults
+      )
     )
+    request.makeRequest
   }
 
   /**
@@ -75,7 +77,7 @@ class Pusher(private val appId: String,
       prefixFilter => Map("filter_by_prefix" -> prefixFilter)
     ).getOrElse(Map.empty[String, String])
 
-    Request.makeRequest(
+    val request = new Request(
       RequestParams(
         pusherConfig,
         "GET",
@@ -84,6 +86,8 @@ class Pusher(private val appId: String,
         None
       )
     )
+
+    request.makeRequest
   }
 
   /**
@@ -99,7 +103,7 @@ class Pusher(private val appId: String,
         Map("info" -> attributes.get.mkString(","))
       } else Map.empty[String, String]
 
-    Request.makeRequest(
+    val request = new Request(
       RequestParams(
         pusherConfig,
         "GET",
@@ -108,6 +112,8 @@ class Pusher(private val appId: String,
         None
       )
     )
+
+    request.makeRequest
   }
 
   /**
@@ -116,16 +122,19 @@ class Pusher(private val appId: String,
    * @return PusherResponse
    */
   def usersInfo(channel: String): PusherResponse[UsersInfoResponse] = {
-    Request.validateAndMakeRequest(
+    val validationResult = validateChannel(channel)
+    if (validationResult.nonEmpty) return Left(validationResult.get)
+
+    val request = new Request(
       RequestParams(
         pusherConfig,
         "GET",
         s"/channels/$channel/users",
         None,
         None
-      ),
-      List(validateChannel(channel))
+      )
     )
+    request.makeRequest
   }
 
   /**
@@ -137,9 +146,9 @@ class Pusher(private val appId: String,
    */
   def authenticate(channel: String,
                    socketId: String,
-                   customDataOpt: Option[Map[String, Any]]): String = {
+                   customDataOpt: Option[PresenceUser]): String = {
     val stringToSign: String = customDataOpt.map(
-      customData => s"$socketId:$channel:${encodeJson(customData)}"
+      customData => s"$socketId:$channel:${encodePresenceUser(customData)}"
     ).getOrElse(s"$socketId:$channel")
 
     val signature: String = sign(pusherConfig.secret, stringToSign)
@@ -148,7 +157,7 @@ class Pusher(private val appId: String,
 
     encodeJson(
       result ++ customDataOpt.map(
-        customData => Map("channel_data" -> encodeJson(customData))
+        customData => Map("channel_data" -> encodePresenceUser(customData))
       ).getOrElse(Map.empty[String, String])
     )
   }

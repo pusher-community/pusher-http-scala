@@ -36,6 +36,16 @@ object Util {
   }
 
   /**
+   * Encode presenceUser into JSON
+   * @param presenceUser PresenceUser object to be encoded
+   * @return
+   */
+  def encodePresenceUser(presenceUser: PresenceUser): String = {
+    val json = ("user_id" -> presenceUser.userId) ~ ("user_info" -> presenceUser.userInfo)
+    write(json)
+  }
+
+  /**
    * Generate an MD5 hash using the body
    * @param s String for which the hash is to be generated
    * @return String
