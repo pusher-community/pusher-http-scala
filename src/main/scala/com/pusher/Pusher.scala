@@ -25,7 +25,6 @@ class Pusher(private val appId: String,
 
   private val pusherConfig: PusherConfig = PusherConfig(appId, key, secret, ssl, cluster, port, host)
 
-
   /**
    * Trigger an event
    * @param channels Channels to trigger the event on
@@ -58,7 +57,8 @@ class Pusher(private val appId: String,
         Some(encodeTriggerData(triggerData))
       )
     )
-    request.makeRequest
+
+    Request.parseRawResponse[TriggerResponse](request.makeRequest())
   }
 
   /**
@@ -87,7 +87,7 @@ class Pusher(private val appId: String,
       )
     )
 
-    request.makeRequest
+    Request.parseRawResponse[ChannelsInfoResponse](request.makeRequest())
   }
 
   /**
@@ -113,7 +113,7 @@ class Pusher(private val appId: String,
       )
     )
 
-    request.makeRequest
+    Request.parseRawResponse[ChannelInfoResponse](request.makeRequest())
   }
 
   /**
@@ -134,7 +134,8 @@ class Pusher(private val appId: String,
         None
       )
     )
-    request.makeRequest
+
+    Request.parseRawResponse[UsersInfoResponse](request.makeRequest())
   }
 
   /**

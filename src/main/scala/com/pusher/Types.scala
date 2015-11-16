@@ -4,6 +4,8 @@ package com.pusher
  * Custom types
  */
 object Types {
+  type RawPusherResponse = Either[PusherError, String]
+
   type PusherResponse[T] = Either[PusherError, T]
 
   type ValidationResponse = Option[ValidationError]
