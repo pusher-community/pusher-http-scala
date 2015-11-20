@@ -62,40 +62,12 @@ class Request(private val requestParams: RequestParams) {
   }
 
   /**
-   * Handle HTTP responses
-   * @param response The HTTP response object
-   * @return PusherResponse
-   */
-  private def handleResponse(response: Try[HttpResponse[String]]): RawPusherResponse = {
-    val httpResponse: Either[PusherRequestFailedError, HttpResponse[String]] =
-      if (response.isSuccess) {
-        Right(response.get)
-      } else {
-        Left(PusherRequestFailedError(response.failed.get.getMessage))
-      }
-
-    httpResponse match {
-      case Right(resp) =>
-        val responseBody: String = resp.body
-
-        resp.code match {
-          case 200 => Right(responseBody)
-          case 400 => Left(PusherBadRequestError(responseBody))
-          case 401 => Left(PusherBadAuthError(responseBody))
-          case 403 => Left(PusherForbiddenError(responseBody))
-          case _ => Left(PusherBadStatusError(responseBody))
-        }
-      case Left(error) => Left(error)
-    }
-  }
-
-  /**
    * Make a new HTTP request
    * Generate all auth that is required to be sent
    * @return PusherResponse
    */
   def makeRequest(): RawPusherResponse = {
-    val initRequest: HttpRequest = Http(
+    val initRequest: HttpRequest =  Http(
       generateEndpoint(requestParams.config, requestParams.path)
     ).method(
         requestParams.verb
@@ -109,7 +81,7 @@ class Request(private val requestParams: RequestParams) {
       case _ => initRequest
     }
 
-    handleResponse(Try(request.asString))
+    Request.handleResponse(Try(request.asString))
   }
 }
 
@@ -139,6 +111,34 @@ object Request {
   def parseRawResponse[T <: PusherBaseResponse : Manifest](rawPusherResponse: RawPusherResponse): PusherResponse[T] = {
     rawPusherResponse match {
       case Right(rawResponse) => parseResponse[T](rawResponse)
+      case Left(error) => Left(error)
+    }
+  }
+
+  /**
+   * Handle HTTP responses
+   * @param response The HTTP response object
+   * @return PusherResponse
+   */
+  def handleResponse(response: Try[HttpResponse[String]]): RawPusherResponse = {
+    val httpResponse =
+      if (response.isSuccess) {
+        Right(response.get)
+      } else {
+        Left(PusherRequestFailedError(response.failed.get.getMessage))
+      }
+
+    httpResponse match {
+      case Right(resp) =>
+        val responseBody: String = resp.body
+
+        resp.code match {
+          case 200 => Right(responseBody)
+          case 400 => Left(PusherBadRequestError(responseBody))
+          case 401 => Left(PusherBadAuthError(responseBody))
+          case 403 => Left(PusherForbiddenError(responseBody))
+          case _ => Left(PusherBadStatusError(responseBody))
+        }
       case Left(error) => Left(error)
     }
   }
