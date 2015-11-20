@@ -62,11 +62,10 @@ class Request(private val requestParams: RequestParams) {
   }
 
   /**
-   * Make a new HTTP request
-   * Generate all auth that is required to be sent
-   * @return PusherResponse
+   * Build an HTTP request
+   * @return HttpRequest
    */
-  def makeRequest(): RawPusherResponse = {
+  def buildRequest(): HttpRequest = {
     val initRequest: HttpRequest =  Http(
       generateEndpoint(requestParams.config, requestParams.path)
     ).method(
@@ -81,7 +80,23 @@ class Request(private val requestParams: RequestParams) {
       case _ => initRequest
     }
 
-    Request.handleResponse(Try(request.asString))
+    request
+  }
+
+  /**
+   * Make a new HTTP request
+   * @param request HTTPRequest object
+   * @return HttpResponse[String]
+   */
+  def httpCall(request: HttpRequest): Try[HttpResponse[String]] = Try(request.asString)
+
+  /**
+   * Make request and handle responses
+   * @return RawPusherResponse
+   */
+  def rawResponse(): RawPusherResponse = {
+    val response = httpCall(buildRequest())
+    Request.handleResponse(response)
   }
 }
 
@@ -90,28 +105,33 @@ object Request {
   implicit val formats = DefaultFormats
 
   /**
+   * Build PusherResponse object
+   * @param rawResponse RawPusherResponse object
+   * @tparam T Type of PusherResponse
+   * @return PusherResponse[T]
+   */
+  def buildPusherResponse[T <: PusherBaseResponse : Manifest](
+      rawResponse: Either[String, RawPusherResponse]): PusherResponse[T] = {
+    rawResponse match {
+      case Left(stringResponse) => parseResponse[T](stringResponse)
+      case Right(rawPusherResponse) =>
+        rawPusherResponse match {
+          case Right(rawResp) => parseResponse[T](rawResp)
+          case Left(error) => Left(error)
+        }
+    }
+  }
+
+  /**
    * Parse responses and extract them into case classes
    * @param responseBody The response string to parse
    * @tparam T Type of the case class
    * @return T
    */
-  def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
+  private def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
     parseOpt(responseBody) match {
       case Some(parsedValue) => Right(parsedValue.extract[T])
       case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
-    }
-  }
-
-  /**
-   * Utility function to parse RawPusherResponse
-   * @param rawPusherResponse RawPusherResponse to be parsed
-   * @tparam T Type of response
-   * @return PusherResponse[T]
-   */
-  def parseRawResponse[T <: PusherBaseResponse : Manifest](rawPusherResponse: RawPusherResponse): PusherResponse[T] = {
-    rawPusherResponse match {
-      case Right(rawResponse) => parseResponse[T](rawResponse)
-      case Left(error) => Left(error)
     }
   }
 

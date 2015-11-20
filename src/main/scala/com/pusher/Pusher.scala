@@ -58,7 +58,9 @@ class Pusher(private val appId: String,
       )
     )
 
-    Request.parseRawResponse[TriggerResponse](request.makeRequest())
+    Request.buildPusherResponse[TriggerResponse](
+      Right(request.rawResponse())
+    )
   }
 
   /**
@@ -87,7 +89,9 @@ class Pusher(private val appId: String,
       )
     )
 
-    Request.parseRawResponse[ChannelsInfoResponse](request.makeRequest())
+    Request.buildPusherResponse[ChannelsInfoResponse](
+      Right(request.rawResponse())
+    )
   }
 
   /**
@@ -113,7 +117,9 @@ class Pusher(private val appId: String,
       )
     )
 
-    Request.parseRawResponse[ChannelInfoResponse](request.makeRequest())
+    Request.buildPusherResponse[ChannelInfoResponse](
+      Right(request.rawResponse())
+    )
   }
 
   /**
@@ -135,7 +141,9 @@ class Pusher(private val appId: String,
       )
     )
 
-    Request.parseRawResponse[UsersInfoResponse](request.makeRequest())
+    Request.buildPusherResponse[UsersInfoResponse](
+      Right(request.rawResponse())
+    )
   }
 
   /**
@@ -179,7 +187,7 @@ class Pusher(private val appId: String,
       return Left(WebhookError("Received webhook with invalid signature"))
     }
 
-    val bodyData = Request.parseResponse[WebhookResponse](body)
+    val bodyData = Request.buildPusherResponse[WebhookResponse](Left(body))
     bodyData match {
       case Right(data) =>
         if ((System.currentTimeMillis / 1000 - data.time_ms) > 300000) {
