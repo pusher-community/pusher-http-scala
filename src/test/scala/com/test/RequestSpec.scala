@@ -2,13 +2,13 @@ package com.test
 
 import com.pusher._
 import org.scalatest.FunSpec
-import org.mockito.Mockito.when
-import org.scalatest.mock.MockitoSugar
+import org.specs2.mock.Mockito
+import org.scalatest.Matchers._
 
-import scala.util.{Success, Failure}
+import scala.util.{Try, Success, Failure}
 import scalaj.http.{HttpRequest, HttpResponse}
 
-class RequestSpec extends FunSpec with MockitoSugar {
+class RequestSpec extends FunSpec with  Mockito {
   describe("#buildRequest") {
     describe("GET request") {
       it("should correctly build the request") {
@@ -91,6 +91,34 @@ class RequestSpec extends FunSpec with MockitoSugar {
         )
         assert(httpRequest.params.toMap.keys == expectedKeys)
       }
+    }
+  }
+
+  describe("#httpCall") {
+    it("should make an HTTP request and return a Try[HTTPResponse[String]]") {
+      val pusherConfig = PusherConfig("123", "key", "secret")
+      val requestParams = RequestParams(
+        pusherConfig,
+        "GET",
+        "/channels/test-channel",
+        None,
+        None
+      )
+
+      val request = new Request(requestParams)
+      val mockHttpRequest = mock[HttpRequest]
+      val mockHttpResponse = HttpResponse[String]("", 200, Map())
+
+      mockHttpRequest.asString returns mockHttpResponse
+
+      val response = request.httpCall(mockHttpRequest)
+
+      there was one(mockHttpRequest).asString
+      response shouldBe a [Try[_]]
+      response.get shouldBe a [HttpResponse[_]]
+      assert(response.isSuccess)
+      assert(response.get.code == 200)
+      assert(response.get.body == "")
     }
   }
 
