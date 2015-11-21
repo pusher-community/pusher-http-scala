@@ -94,15 +94,19 @@ class Request(private val requestParams: RequestParams) {
    * Make request and handle responses
    * @return RawPusherResponse
    */
-  def rawResponse(): RawPusherResponse = {
-    val response = httpCall(buildRequest())
-    Request.handleResponse(response)
-  }
+  def rawResponse(): RawPusherResponse = Request.handleResponse(httpCall(buildRequest()))
 }
 
 object Request {
 
   implicit val formats = DefaultFormats
+
+  /**
+   * Factory method for a new Request object
+   * @param requestParams RequestParams
+   * @return Request
+   */
+  def apply(requestParams: RequestParams): Request = new Request(requestParams)
 
   /**
    * Build PusherResponse object
@@ -119,19 +123,6 @@ object Request {
           case Right(rawResp) => parseResponse[T](rawResp)
           case Left(error) => Left(error)
         }
-    }
-  }
-
-  /**
-   * Parse responses and extract them into case classes
-   * @param responseBody The response string to parse
-   * @tparam T Type of the case class
-   * @return T
-   */
-  private def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
-    parseOpt(responseBody) match {
-      case Some(parsedValue) => Right(parsedValue.extract[T])
-      case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
     }
   }
 
@@ -160,6 +151,19 @@ object Request {
           case _ => Left(PusherBadStatusError(responseBody))
         }
       case Left(error) => Left(error)
+    }
+  }
+
+  /**
+   * Parse responses and extract them into case classes
+   * @param responseBody The response string to parse
+   * @tparam T Type of the case class
+   * @return T
+   */
+  private def parseResponse[T <: PusherBaseResponse : Manifest](responseBody: String): PusherResponse[T] = {
+    parseOpt(responseBody) match {
+      case Some(parsedValue) => Right(parsedValue.extract[T])
+      case None => Left(JSONParsingError(s"Failed to parse JSON: $responseBody"))
     }
   }
 }

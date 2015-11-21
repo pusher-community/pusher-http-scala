@@ -1,6 +1,5 @@
 package com.test
 
-import com.pusher.Request.buildPusherResponse
 import com.pusher._
 
 import org.scalatest.FunSpec
@@ -8,11 +7,12 @@ import org.scalatest.FunSpec
 class ParsingSpec extends FunSpec {
   describe("#buildPusherResponse") {
     it("should deserialise trigger JSON into TriggerResponse") {
-      assert(buildPusherResponse[TriggerResponse](Left("{}")) == Right(TriggerResponse()))
+
+      assert(Request.buildPusherResponse[TriggerResponse](Left("{}")) == Right(TriggerResponse()))
     }
 
     it("should deserialise channels info JSON into ChannelsInfoResponse with user_count") {
-      assert(buildPusherResponse[ChannelsInfoResponse](
+      assert(Request.buildPusherResponse[ChannelsInfoResponse](
         Left("{\"channels\":{\"presence-foobar\":{\"user_count\":42},\"presence-another\":{\"user_count\":123}}}"))
         ==
         Right(
@@ -24,7 +24,7 @@ class ParsingSpec extends FunSpec {
     }
 
     it("should deserialise channels info JSON into ChannelsInfoResponse without user_count") {
-      assert(buildPusherResponse[ChannelsInfoResponse](
+      assert(Request.buildPusherResponse[ChannelsInfoResponse](
         Left("{\"channels\":{\"presence-foobar\":{},\"presence-another\":{}}}"))
         ==
         Right(
@@ -36,7 +36,7 @@ class ParsingSpec extends FunSpec {
     }
 
     it("should deserialise channel info JSON into ChannelInfoResponse with all attributes") {
-      assert(buildPusherResponse[ChannelInfoResponse](
+      assert(Request.buildPusherResponse[ChannelInfoResponse](
         Left("{\"occupied\":true,\"user_count\":42,\"subscription_count\":42}"))
         ==
         Right(
@@ -50,7 +50,7 @@ class ParsingSpec extends FunSpec {
     }
 
     it("should deserialise channel info JSON into ChannelInfoResponse with missing attributes") {
-      assert(buildPusherResponse[ChannelInfoResponse](
+      assert(Request.buildPusherResponse[ChannelInfoResponse](
         Left("{\"occupied\":true}"))
         ==
         Right(
@@ -64,7 +64,7 @@ class ParsingSpec extends FunSpec {
     }
 
     it("should deserialise users info JSON into UsersInfoResponse") {
-      assert(buildPusherResponse[UsersInfoResponse](
+      assert(Request.buildPusherResponse[UsersInfoResponse](
         Left("{\"users\":[{\"id\":\"1\"},{\"id\":\"2\"}]}"))
         ==
         Right(UsersInfoResponse(
@@ -74,11 +74,11 @@ class ParsingSpec extends FunSpec {
     }
 
     it("should fail if there JSON is invalid") {
-      assert(buildPusherResponse[TriggerResponse](Left("test")) == Left(JSONParsingError("Failed to parse JSON: test")))
+      assert(Request.buildPusherResponse[TriggerResponse](Left("test")) == Left(JSONParsingError("Failed to parse JSON: test")))
     }
 
     it("should deserialise webhook channel existence responses into WebhookResponse") {
-      assert(buildPusherResponse[WebhookResponse]
+      assert(Request.buildPusherResponse[WebhookResponse]
         (Left("{\"time_ms\": 1327078148132,\"events\": [{ \"name\": \"channel_occupied\", " +
           "\"channel\": \"test_channel\"}]}"))
         ==
@@ -101,7 +101,7 @@ class ParsingSpec extends FunSpec {
     }
 
     it("should deserialise webhook presence events into WebhookResponse") {
-      assert(buildPusherResponse[WebhookResponse](
+      assert(Request.buildPusherResponse[WebhookResponse](
         Left("{\"time_ms\": 1327078148132,\"events\": [{\"name\": \"member_added\", " +
           "\"channel\": \"presence-your_channel_name\", \"user_id\": \"123\"}]}")
         )
@@ -125,7 +125,7 @@ class ParsingSpec extends FunSpec {
     }
 
     it("should deserialise webhook client events into WebhookResponse") {
-      assert(buildPusherResponse[WebhookResponse](
+      assert(Request.buildPusherResponse[WebhookResponse](
         Left("{\"time_ms\": 1327078148132,\"events\": [{\"name\":\"client_event\"," +
           "\"channel\":\"chan\",\"event\":\"event\"," +
           "\"data\":\"data\",\"socket_id\":\"socket_id\"," +

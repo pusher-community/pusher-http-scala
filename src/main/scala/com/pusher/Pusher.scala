@@ -48,18 +48,16 @@ class Pusher(private val appId: String,
 
     if (validationResults.nonEmpty) return Left(validationResults.head)
 
-    val request = new Request(
-      RequestParams(
-        pusherConfig,
-        "POST",
-        "/events",
-        None,
-        Some(encodeTriggerData(triggerData))
-      )
+    val requestParams = RequestParams(
+      pusherConfig,
+      "POST",
+      "/events",
+      None,
+      Some(encodeTriggerData(triggerData))
     )
 
     Request.buildPusherResponse[TriggerResponse](
-      Right(request.rawResponse())
+      Right(requestObject(requestParams).rawResponse())
     )
   }
 
@@ -79,18 +77,16 @@ class Pusher(private val appId: String,
       prefixFilter => Map("filter_by_prefix" -> prefixFilter)
     ).getOrElse(Map.empty[String, String])
 
-    val request = new Request(
-      RequestParams(
-        pusherConfig,
-        "GET",
-        "/channels",
-        Some(attributeParams ++ prefixParams),
-        None
-      )
+    val requestParams = RequestParams(
+      pusherConfig,
+      "GET",
+      "/channels",
+      Some(attributeParams ++ prefixParams),
+      None
     )
 
     Request.buildPusherResponse[ChannelsInfoResponse](
-      Right(request.rawResponse())
+      Right(requestObject(requestParams).rawResponse())
     )
   }
 
@@ -107,18 +103,16 @@ class Pusher(private val appId: String,
         Map("info" -> attributes.get.mkString(","))
       } else Map.empty[String, String]
 
-    val request = new Request(
-      RequestParams(
-        pusherConfig,
-        "GET",
-        s"/channels/$channel",
-        Some(params),
-        None
-      )
+    val requestParams = RequestParams(
+      pusherConfig,
+      "GET",
+      s"/channels/$channel",
+      Some(params),
+      None
     )
 
     Request.buildPusherResponse[ChannelInfoResponse](
-      Right(request.rawResponse())
+      Right(requestObject(requestParams).rawResponse())
     )
   }
 
@@ -131,18 +125,16 @@ class Pusher(private val appId: String,
     val validationResult = validateChannel(channel)
     if (validationResult.nonEmpty) return Left(validationResult.get)
 
-    val request = new Request(
-      RequestParams(
-        pusherConfig,
-        "GET",
-        s"/channels/$channel/users",
-        None,
-        None
+    val requestParams = RequestParams(
+      pusherConfig,
+      "GET",
+      s"/channels/$channel/users",
+      None,
+      None
       )
-    )
 
     Request.buildPusherResponse[UsersInfoResponse](
-      Right(request.rawResponse())
+      Right(requestObject(requestParams).rawResponse())
     )
   }
 
@@ -198,4 +190,11 @@ class Pusher(private val appId: String,
       case Left(error) => Left(error)
     }
   }
+
+  /**
+   * Get a new Request object
+   * @param requestParams RequestParams
+   * @return Request
+   */
+  def requestObject(requestParams: RequestParams) = Request(requestParams)
 }

@@ -8,7 +8,7 @@ import org.scalatest.Matchers._
 import scala.util.{Try, Success, Failure}
 import scalaj.http.{HttpRequest, HttpResponse}
 
-class RequestSpec extends FunSpec with  Mockito {
+class RequestSpec extends FunSpec with Mockito {
   describe("#buildRequest") {
     describe("GET request") {
       it("should correctly build the request") {
