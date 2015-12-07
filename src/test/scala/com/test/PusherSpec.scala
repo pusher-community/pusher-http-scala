@@ -45,6 +45,29 @@ class PusherSpec extends FunSpec with Mockito {
     }
   }
 
+  describe("#channelsInfo") {
+    it("should query pusher for info about multiple channels and return ChannelsInfoResponse") {
+      val requestParams = RequestParams(
+        PusherConfig(appId, key, secret),
+        "GET",
+        "/channels",
+        Some(Map.empty[String, String]),
+        None
+      )
+
+      class MockedRequest extends Request(requestParams)
+      val mockedRequest = mock[MockedRequest]
+      pusherSpy.requestObject(requestParams) returns mockedRequest
+      mockedRequest.rawResponse() returns Right("{\"channels\":{\"presence-foobar\":{}}}")
+
+      val response = pusherSpy.channelsInfo(None, None)
+
+      there was one(pusherSpy).channelsInfo(None, None)
+      assert(response == Right(ChannelsInfoResponse(Map("presence-foobar" -> ChannelDetails(None)))))
+
+    }
+  }
+
   describe("#authenticate") {
     it("should authenticate private channels") {
       val auth = pusher.authenticate("private-test-channel", "12376.123", None)
