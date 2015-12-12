@@ -1,6 +1,6 @@
 package com.test
 
-import com.pusher.TriggerData
+import com.pusher.{PresenceUser, TriggerData}
 import com.pusher.Util._
 
 import org.scalatest.FunSpec
@@ -25,6 +25,13 @@ class UtilSpec extends FunSpec {
       assert(encodeTriggerData(triggerData) ==
         "{\"channels\":[\"test_channel\"],\"name\":\"test_event\",\"data\":\"lalalalal\"}"
       )
+    }
+  }
+
+  describe("#encodePresenceUser") {
+    it("should encode the presence user object into JSON") {
+      val presenceUser = PresenceUser("123", Map("blah" -> "blah"))
+      assert(encodePresenceUser(presenceUser) == "{\"user_id\":\"123\",\"user_info\":{\"blah\":\"blah\"}}")
     }
   }
 
