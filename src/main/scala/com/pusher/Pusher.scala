@@ -131,7 +131,7 @@ class Pusher(private val appId: String,
       s"/channels/$channel/users",
       None,
       None
-      )
+    )
 
     Request.buildPusherResponse[UsersInfoResponse](
       Right(requestObject(requestParams).rawResponse())

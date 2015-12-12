@@ -4,7 +4,6 @@ import com.pusher.Util._
 import com.pusher._
 import org.scalatest.FunSpec
 import org.specs2.mock.Mockito
-import org.scalatest.Matchers._
 
 class PusherSpec extends FunSpec with Mockito {
   val appId = "4"
@@ -85,6 +84,26 @@ class PusherSpec extends FunSpec with Mockito {
 
       val response = pusherSpy.channelInfo("test-channel", None)
       assert(response == Right(ChannelInfoResponse(occupied = true, None, None)))
+    }
+  }
+
+  describe("#usersInfo") {
+    it("should return user ids associated with a presence channel") {
+      val requestParams = RequestParams(
+        PusherConfig(appId, key, secret),
+        "GET",
+        "/channels/presence-test-channel/users",
+        None,
+        None
+      )
+
+      class MockedRequest extends Request(requestParams)
+      val mockedRequest = mock[MockedRequest]
+      pusherSpy.requestObject(requestParams) returns mockedRequest
+      mockedRequest.rawResponse() returns Right("{\"users\": [{\"id\": \"1\"}]}")
+
+      val response = pusherSpy.usersInfo("presence-test-channel")
+      assert(response == Right(UsersInfoResponse(List(UserDetails("1")))))
     }
   }
 
