@@ -12,6 +12,9 @@ import com.pusher.Util.{encodeTriggerData, encodePresenceUser, encodeJson}
 import com.pusher.Types.PusherResponse
 import com.pusher.Signature.{sign, verify}
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+
 /**
  * Pusher object
  */
@@ -59,6 +62,21 @@ class Pusher(private val appId: String,
     Request.buildPusherResponse[TriggerResponse](
       Right(requestObject(requestParams).rawResponse())
     )
+  }
+
+  /**
+   * Async trigger
+   * @param channels Channels to trigger the event on
+   * @param eventName Name of the event
+   * @param data Data to send
+   * @param socketId Socked ID to exclude
+   * @return Future
+   */
+  def triggerAsync(channels: List[String],
+                   eventName: String,
+                   data: String,
+                   socketId: Option[String] = None): Future[PusherResponse[TriggerResponse]] = Future {
+    trigger(channels, eventName, data, socketId)
   }
 
   /**
