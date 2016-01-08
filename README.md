@@ -102,7 +102,7 @@ For more information see our [docs](http://pusher.com/docs/authenticating_users)
 |socketId `String`| The assigned socket id|
 |customDataOpt `Option[PresenceUser]`| Presence user data (only for presence channels)|
 
-Returns a JOSN `String` with the authentication information as detailed in the documentation.
+Returns a JSON string like so `{"auth":"somekey:81a249f5aae14a7ffdef6574bc7aceeac10472f79e1b74283d3306d4a513bb89"}`
 
 ##### Private Channels
 
@@ -132,12 +132,12 @@ This library allows you to query our API to retrieve information about your appl
 Returns a `PusherResponse[ChannelsInfoResponse]`(`Either[PusherError, ChannelsInfoResponse]`).
 
 ```scala
-val result = pusher.channelsInfo(Some("presence-"), Some("user_count))
+val result = pusher.channelsInfo(Some("presence-"), Some("user_count"))
 result match {
   case Left(error) => println(s"Yikes, there was an error: ${error.message}")
   case Right(res) => println(res) // Right(ChannelsInfoResponse(Map("presence-foobar" -> ChannelDetails(user_count: 1))))
 }
-
+```
 
 #### Get the state of a single channel
 
@@ -149,7 +149,6 @@ result match {
 |attributes `Option[List[String]]` | A list of attributes you'd like to request|
 
 Returns a `PusherResponse[ChannelInfoResponse]`(`Either[PusherError, ChannelInfoResponse]`).
-
 
 ```scala
 val result = pusher.channelInfo(channel: "some-channel", None)
